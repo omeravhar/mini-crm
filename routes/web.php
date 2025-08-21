@@ -15,6 +15,9 @@ Route::get('main', [UserController::class, 'showMain']);
 route::get('myLeads',function(){
     return view('myLeads');
 });
+route::get('allCustomers',function(){
+    return view('allCustomers');
+});
 
 
 

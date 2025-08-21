@@ -271,45 +271,43 @@
                                     </svg>
                                     Dashboard
                                 </a> </li>
-                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/newLead')}}"> <svg class="bi" aria-hidden="true">
-                                        <use xlink:href="#file-earmark"></use>
-                                    </svg>
-                                    Creat new lead
-                                </a> </li>
-                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/showAllLeads')}}"> <svg class="bi" aria-hidden="true">
-                                        <use xlink:href="#file-earmark-text"></use>
-                                    </svg>
-                                    All leads
-                                </a> </li>
-                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> <svg class="bi" aria-hidden="true">
-                                        <use xlink:href="#people"></use>
-                                    </svg>
-                                    Customers
-                                </a> </li>
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('myLeads')}}"> 
                                        <i class="bi bi-tags"></i>
                                     
                                     My leads
                                 </a> </li>
-                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> <svg class="bi" aria-hidden="true">
+                           
+                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('allCustomers')}}"> <svg class="bi" aria-hidden="true">
+                                        <use xlink:href="#people"></use>
+                                    </svg>
+                                    Customers
+                                </a> </li>
+                            
+                            <!-- <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#puzzle"></use>
                                     </svg>
                                     Integrations
-                                </a> </li>
+                                </a> </li> -->
                         </ul>
-                        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase"> <span>Saved reports</span> <a class="link-secondary" href="#" aria-label="Add a new report"> <svg class="bi" aria-hidden="true">
+                        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase"> <span>Admin section</span> <a class="link-secondary" href="#" aria-label="Add a new report"> <svg class="bi" aria-hidden="true">
                                     <use xlink:href="#plus-circle"></use>
                                 </svg> </a> </h6>
                         <ul class="nav flex-column mb-auto">
-                            <!-- <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/createNewUser')}}"> 
-                                <i class="bi bi-archive"></i>
-                                    Crm users
-                                </a> </li> -->
+                           <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/newLead')}}"> <svg class="bi" aria-hidden="true">
+                                        <use xlink:href="#file-earmark"></use>
+                                    </svg>
+                                    Creat new lead
+                                </a> </li>
+                                 <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/showAllLeads')}}"> <svg class="bi" aria-hidden="true">
+                                        <use xlink:href="#file-earmark-text"></use>
+                                    </svg>
+                                    All leads
+                                </a> </li>
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/showUsers')}}"> 
                                  <i class="bi bi-person-fill-gear"></i>
                                     CRM users
                                 </a> </li>
-                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> 
+                            <!-- <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> 
                                 <i class="bi bi-person-fill-gear"></i>
                                     Social engagement
                                 </a> </li>
@@ -317,7 +315,7 @@
                                         <use xlink:href="#file-earmark-text"></use>
                                     </svg>
                                     Year-end sale
-                                </a> </li>
+                                </a> </li> -->
                         </ul>
                         <hr class="my-3">
                         <ul class="nav flex-column mb-auto">
