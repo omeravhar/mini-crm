@@ -33,73 +33,73 @@
 <div class="container mt-4">
 
   <!-- Table 1: New Leads -->
-  <h3>New Leads (Unassigned)</h3>
+  <h3>לידים חדשים (ללא הקצאה)</h3>
   <table class="table table-bordered" id="unassignedLeads">
     <thead>
       <tr>
-        <th>Lead ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Assign</th>
+        <th>מספר ליד</th>
+        <th>שם</th>
+        <th>דוא"ל</th>
+        <th>הקצאה</th>
       </tr>
     </thead>
     <tbody>
       <tr draggable="true" data-lead-id="101" onclick="openLeadModal(this)">
         <td>101</td>
-        <td>John Doe</td>
-        <td>john@example.com</td>
+        <td>אמיר כהן</td>
+        <td>amir@example.com</td>
         <td>
           <form method="POST" action="/assign-lead">
             <input type="hidden" name="lead_id" value="101">
             <select name="user_id" class="form-select" required onchange="this.form.submit()">
-              <option value="">Select user...</option>
-              <option value="1">Alice</option>
-              <option value="2">Bob</option>
+              <option value="">בחר משתמש...</option>
+              <option value="1">אליס</option>
+              <option value="2">בוב</option>
             </select>
           </form>
         </td>
       </tr>
       <tr draggable="true" data-lead-id="97" onclick="openLeadModal(this)">
         <td>97</td>
-        <td>John Doe</td>
-        <td>john@example.com</td>
+        <td>יעל ישראלי</td>
+        <td>yael@example.com</td>
         <td>
           <form method="POST" action="/assign-lead">
             <input type="hidden" name="lead_id" value="97">
             <select name="user_id" class="form-select" required onchange="this.form.submit()">
-              <option value="">Select user...</option>
-              <option value="1">Alice</option>
-              <option value="2">Bob</option>
+              <option value="">בחר משתמש...</option>
+              <option value="1">אליס</option>
+              <option value="2">בוב</option>
             </select>
           </form>
         </td>
       </tr>
       <tr draggable="true" data-lead-id="98" onclick="openLeadModal(this)">
         <td>98</td>
-        <td>John Doe</td>
-        <td>john@example.com</td>
+        <td>רוני לוי</td>
+        <td>roni@example.com</td>
         <td>
           <form method="POST" action="/assign-lead">
             <input type="hidden" name="lead_id" value="98">
             <select name="user_id" class="form-select" required onchange="this.form.submit()">
-              <option value="">Select user...</option>
-              <option value="1">Alice</option>
-              <option value="2">Bob</option>
+              <option value="">בחר משתמש...</option>
+              <option value="1">אליס</option>
+              <option value="2">בוב</option>
             </select>
           </form>
         </td>
       </tr>
       <tr draggable="true" data-lead-id="102" onclick="openLeadModal(this)">
         <td>102</td>
-        <td>John Doe</td>
-        <td>john@example.com</td>
+        <td>שחר דן</td>
+        <td>shahar@example.com</td>
         <td>
           <form method="POST" action="/assign-lead">
             <input type="hidden" name="lead_id" value="102">
             <select name="user_id" class="form-select" required onchange="this.form.submit()">
-              <option value="">Select user...</option>
-              <option value="1">Alice</option>
-              <option value="2">Bob</option>
+              <option value="">בחר משתמש...</option>
+              <option value="1">אליס</option>
+              <option value="2">בוב</option>
             </select>
           </form>
         </td>
@@ -108,27 +108,27 @@
   </table>
 
   <!-- Table 2: Assigned Leads -->
-  <h3 class="mt-5">Assigned Leads</h3>
+  <h3 class="mt-5">לידים מוקצים</h3>
   <table class="table table-striped" id="assignedLeads">
     <thead>
       <tr>
-        <th>Lead ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>User</th>
-        <th>Status</th>
+        <th>מספר ליד</th>
+        <th>שם</th>
+        <th>דוא"ל</th>
+        <th>משתמש מטפל</th>
+        <th>סטטוס</th>
       </tr>
     </thead>
     <tbody>
       <tr class="placeholder">
-        <td colspan="5" style="text-align:center;color:#aaa;">Drag leads here</td>
+        <td colspan="5" style="text-align:center;color:#aaa;">גררו לידים לכאן</td>
       </tr>
       <tr draggable="true" data-lead-id="201" onclick="openLeadModal(this)">
         <td>201</td>
-        <td>Jane Smith</td>
-        <td>jane@example.com</td>
-        <td>Alice</td>
-        <td><span class="badge bg-success">Contacted</span></td>
+        <td>נועה בר</td>
+        <td>noa@example.com</td>
+        <td>אליס</td>
+        <td><span class="badge bg-success" data-status="contacted">בוצע קשר</span></td>
       </tr>
     </tbody>
   </table>
@@ -140,7 +140,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Lead Details</h5>
+        <h5 class="modal-title">פרטי ליד</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -148,56 +148,102 @@
           <input type="hidden" id="leadId">
 
           <div class="mb-3">
-            <label>Name</label>
+            <label>שם</label>
             <input type="text" id="leadName" class="form-control">
           </div>
 
           <div class="mb-3">
-            <label>Email</label>
+            <label>דוא"ל</label>
             <input type="email" id="leadEmail" class="form-control">
           </div>
 
           <div class="mb-3">
-            <label>Phone</label>
+            <label>טלפון</label>
             <input type="text" id="leadPhone" class="form-control">
           </div>
 
           <div class="mb-3">
-            <label>Status</label>
+            <label>סטטוס</label>
             <select id="leadStatus" class="form-select">
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="in-progress">In Progress</option>
-              <option value="closed">Closed</option>
+              <option value="new">חדש</option>
+              <option value="contacted">בוצע קשר</option>
+              <option value="in-progress">בתהליך</option>
+              <option value="closed">נסגר</option>
             </select>
           </div>
 
           <div class="mb-3">
-            <label>Assigned User</label>
+            <label>משתמש מטפל</label>
             <select id="leadUser" class="form-select">
-              <option value="1">Alice</option>
-              <option value="2">Bob</option>
+              <option value="1">אליס</option>
+              <option value="2">בוב</option>
             </select>
           </div>
 
           <div class="mb-3">
-            <label>History</label>
+            <label>היסטוריה</label>
             <textarea id="leadHistory" class="form-control" rows="4" readonly>
-- 2025-08-01: Created
-- 2025-08-02: Contacted by Alice
+- 2025-08-01: הליד נוצר
+- 2025-08-02: בוצע קשר על ידי אליס
             </textarea>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button class="btn btn-primary" onclick="updateLead()">Update</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">סגירה</button>
+        <button class="btn btn-primary" onclick="updateLead()">עדכון</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
+const statusDisplayMap = {
+  new: "חדש",
+  contacted: "בוצע קשר",
+  "in-progress": "בתהליך",
+  closed: "נסגר"
+};
+
+const userDisplayMap = {
+  "1": "אליס",
+  "2": "בוב"
+};
+
+const userValueByLabel = Object.fromEntries(
+  Object.entries(userDisplayMap).map(([value, label]) => [label, value])
+);
+
+function getStatusLabel(status) {
+  if (!status) return "";
+  const normalized = status.toLowerCase();
+  return statusDisplayMap[normalized] || status;
+}
+
+function buildStatusBadge(status) {
+  const normalized = (status || "").toLowerCase();
+  let badgeClass = "bg-secondary";
+  switch (normalized) {
+    case "contacted":
+      badgeClass = "bg-success";
+      break;
+    case "in-progress":
+      badgeClass = "bg-primary";
+      break;
+    case "closed":
+      badgeClass = "bg-dark";
+      break;
+    case "new":
+      badgeClass = "bg-warning text-dark";
+      break;
+  }
+  return `<span class="badge ${badgeClass}" data-status="${normalized || status}">${getStatusLabel(status)}</span>`;
+}
+
+function getUserLabel(value) {
+  return userDisplayMap[value] || value;
+}
+
 // --- Function to add placeholder if table is empty ---
 function addPlaceholderIfEmpty(tbody) {
   const dataRows = tbody.querySelectorAll('tr[data-lead-id]');
@@ -206,7 +252,7 @@ function addPlaceholderIfEmpty(tbody) {
     const colspan = (tableId === 'unassignedLeads') ? 4 : 5;
     const placeholder = document.createElement('tr');
     placeholder.classList.add('placeholder');
-    placeholder.innerHTML = `<td colspan="${colspan}" style="text-align:center;color:#aaa;">Drag leads here</td>`;
+    placeholder.innerHTML = `<td colspan="${colspan}" style="text-align:center;color:#aaa;">גררו לידים לכאן</td>`;
     tbody.appendChild(placeholder);
   }
 }
@@ -254,12 +300,17 @@ function initDraggableRows() {
     addPlaceholderIfEmpty(sourceTbody);
 
     // Extract data safely
+    const statusElement = row.querySelector("[data-status]");
+    const statusValue = statusElement ? statusElement.dataset.status : (row.cells[4]?.innerText || "new").toLowerCase();
+    const userText = row.cells[3]?.innerText?.trim() || "";
+    const userValue = row.cells[3]?.dataset.userId || userValueByLabel[userText] || "";
+
     const leadData = {
       id: row.dataset.leadId,
       name: row.cells[1]?.innerText || "",
       email: row.cells[2]?.innerText || "",
-      user: row.cells[3]?.innerText || "",
-      status: row.cells[4]?.innerText || "New"
+      userValue,
+      statusValue
     };
 
     // Create new row
@@ -275,23 +326,23 @@ function initDraggableRows() {
           <form method="POST" action="/assign-lead">
             <input type="hidden" name="lead_id" value="${leadData.id}">
             <select name="user_id" class="form-select" required onchange="this.form.submit()">
-              <option value="">Select user...</option>
-              <option value="1">Alice</option>
-              <option value="2">Bob</option>
+              <option value="">בחר משתמש...</option>
+              <option value="1">אליס</option>
+              <option value="2">בוב</option>
             </select>
           </form>
         </td>
       `;
     } else {
       // Assign default values if moving from unassigned
-      const user = leadData.user || "Alice";
-      const status = leadData.status || "New";
+      const user = leadData.userValue || "1";
+      const status = leadData.statusValue || "new";
       newRow.innerHTML = `
         <td>${leadData.id}</td>
         <td>${leadData.name}</td>
         <td>${leadData.email}</td>
-        <td>${user}</td>
-        <td><span class="badge bg-success">${status}</span></td>
+        <td>${getUserLabel(user)}</td>
+        <td>${buildStatusBadge(status)}</td>
       `;
     }
 
@@ -315,9 +366,14 @@ function openLeadModal(row) {
   document.getElementById("leadName").value = row.cells[1].innerText;
   document.getElementById("leadEmail").value = row.cells[2].innerText;
   document.getElementById("leadPhone").value = "050-1234567"; // simulate
-  document.getElementById("leadStatus").value = row.cells[4]?.innerText.toLowerCase() || "new";
-  document.getElementById("leadUser").value = row.cells[3]?.innerText || "1";
-  document.getElementById("leadHistory").value = "- 2025-08-01: Created\n- 2025-08-02: Contacted by Alice";
+  const statusElement = row.querySelector("[data-status]");
+  const statusValue = statusElement ? statusElement.dataset.status : "new";
+  document.getElementById("leadStatus").value = statusValue;
+
+  const userText = row.cells[3]?.innerText?.trim() || "";
+  const userValue = row.cells[3]?.dataset.userId || userValueByLabel[userText] || "1";
+  document.getElementById("leadUser").value = userValue;
+  document.getElementById("leadHistory").value = "- 2025-08-01: הליד נוצר\n- 2025-08-02: בוצע קשר על ידי אליס";
 
   const modal = new bootstrap.Modal(document.getElementById("leadModal"));
   modal.show();
@@ -338,8 +394,8 @@ function updateLead() {
   row.cells[2].innerText = email;
 
   if (row.closest("table").id === "assignedLeads") {
-    row.cells[3].innerText = user;
-    row.cells[4].innerHTML = `<span class="badge bg-success">${status}</span>`;
+    row.cells[3].innerText = getUserLabel(user);
+    row.cells[4].innerHTML = buildStatusBadge(status);
   }
 
   console.log(`Lead ${id} updated: ${name}, ${email}, ${status}, ${user}`);

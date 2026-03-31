@@ -22,6 +22,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'role',
         'password',
     ];
 
@@ -46,6 +47,31 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function ownedLeads()
+    {
+        return $this->hasMany(Lead::class, 'owner_id');
+    }
+
+    public function createdLeads()
+    {
+        return $this->hasMany(Lead::class, 'created_by');
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class, 'owner_id');
+    }
+
+    public function authActivityLogs()
+    {
+        return $this->hasMany(AuthActivityLog::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 
 

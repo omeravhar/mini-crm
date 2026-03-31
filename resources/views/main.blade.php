@@ -1,4 +1,4 @@
-<html lang="en" data-bs-theme="light">
+<html lang="he" data-bs-theme="light" dir="rtl">
 
 <head>
     <meta charset="utf-8">
@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Astro v5.9.2">
-    <title>Dashboard Template · Bootstrap v5.3</title>
+    <title>מערכת CRM - לוח בקרה</title>
     <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/dashboard/">
     <script src="{{asset('assets/js/color-modes.js')}}"></script>
    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.x/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-..." crossorigin="anonymous">
@@ -135,8 +135,9 @@
 .sidebar-heading {
   font-size: .75rem;
 }
-.sidebar.border.border-right.col-md-3.col-lg-2.p-0.bg-body-tertiary{
-    height: 100vh !important;
+
+.sidebar {
+  height: 100vh;
 }
 
 /*
@@ -171,9 +172,9 @@
             <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"></path>
         </symbol>
     </svg>
-    <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle"> <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)"> <svg class="bi my-1 theme-icon-active" aria-hidden="true">
+    <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle"> <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="החלפת ערכת נושא (אוטומטי)"> <svg class="bi my-1 theme-icon-active" aria-hidden="true">
                 <use href="#circle-half"></use>
-            </svg> <span class="visually-hidden" id="bd-theme-text">Toggle theme</span> </button>
+            </svg> <span class="visually-hidden" id="bd-theme-text">החלפת ערכת נושא</span> </button>
         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text" >
             <li> <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false"> <svg class="bi me-2 opacity-50" aria-hidden="true">
                         <use href="#sun-fill"></use>
@@ -246,41 +247,41 @@
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
         </symbol>
     </svg>
-    <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow" data-bs-theme="dark"> <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="#">Company CRM</a>
+    <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow" data-bs-theme="dark"> <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="#">מערכת CRM</a>
         <ul class="navbar-nav flex-row d-md-none">
-            <li class="nav-item text-nowrap"> <button class="nav-link px-3 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search"> <svg class="bi" aria-hidden="true">
+            <li class="nav-item text-nowrap"> <button class="nav-link px-3 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="הצגת חיפוש"> <svg class="bi" aria-hidden="true">
                         <use xlink:href="#search"></use>
                     </svg> </button> </li>
-            <li class="nav-item text-nowrap"> <button class="nav-link px-3 text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation"> <svg class="bi" aria-hidden="true">
+            <li class="nav-item text-nowrap"> <button class="nav-link px-3 text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="פתיחת תפריט"> <svg class="bi" aria-hidden="true">
                         <use xlink:href="#list"></use>
                     </svg> </button> </li>
         </ul>
-        <div id="navbarSearch" class="navbar-search w-100 collapse"> <input class="form-control w-100 rounded-0 border-0" type="text" placeholder="Search" aria-label="Search"> </div>
+        <div id="navbarSearch" class="navbar-search w-100 collapse"> <input class="form-control w-100 rounded-0 border-0" type="text" placeholder="חיפוש" aria-label="חיפוש"> </div>
     </header>
     <div class="container-fluid">
         <div class="row">
-            <div class="sidebar border border-right col-md-3 col-lg-2 p-0 bg-body-tertiary">
+            <div class="sidebar border border-end col-md-3 col-lg-2 p-0 bg-body-tertiary">
                 <div class="offcanvas-md offcanvas-end bg-body-tertiary" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
                     <div class="offcanvas-header">
-                        <h5 class="offcanvas-title" id="sidebarMenuLabel">Company CRM</h5> <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+                        <h5 class="offcanvas-title" id="sidebarMenuLabel">מערכת CRM</h5> <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="סגירה"></button>
                     </div>
                     <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
                         <ul class="nav flex-column">
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2 active" aria-current="page" href="#"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#house-fill"></use>
                                     </svg>
-                                    Dashboard
+                                    לוח בקרה
                                 </a> </li>
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('myLeads')}}"> 
                                        <i class="bi bi-tags"></i>
                                     
-                                    My leads
+                                    הלידים שלי
                                 </a> </li>
                            
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('allCustomers')}}"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#people"></use>
                                     </svg>
-                                    Customers
+                                    לקוחות
                                 </a> </li>
                             
                             <!-- <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> <svg class="bi" aria-hidden="true">
@@ -289,23 +290,23 @@
                                     Integrations
                                 </a> </li> -->
                         </ul>
-                        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase"> <span>Admin section</span> <a class="link-secondary" href="#" aria-label="Add a new report"> <svg class="bi" aria-hidden="true">
+                        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase"> <span>אזור ניהול</span> <a class="link-secondary" href="#" aria-label="הוספת דוח חדש"> <svg class="bi" aria-hidden="true">
                                     <use xlink:href="#plus-circle"></use>
                                 </svg> </a> </h6>
                         <ul class="nav flex-column mb-auto">
                            <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/newLead')}}"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#file-earmark"></use>
                                     </svg>
-                                    Creat new lead
+                                    יצירת ליד חדש
                                 </a> </li>
                                  <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/showAllLeads')}}"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#file-earmark-text"></use>
                                     </svg>
-                                    All leads
+                                    כל הלידים
                                 </a> </li>
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/showUsers')}}"> 
                                  <i class="bi bi-person-fill-gear"></i>
-                                    CRM users
+                                    משתמשי CRM
                                 </a> </li>
                             <!-- <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> 
                                 <i class="bi bi-person-fill-gear"></i>
@@ -322,18 +323,18 @@
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#gear-wide-connected"></use>
                                     </svg>
-                                    Settings
+                                    הגדרות
                                 </a> </li>
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> <svg class="bi" aria-hidden="true">
                                         <use xlink:href="#door-closed"></use>
                                     </svg>
-                                    Sign out
+                                    התנתקות
                                 </a> </li>
                         </ul>
                     </div>
                 </div>
             </div>
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <main class="col-md-9 me-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Dashboard</h1>
                   
@@ -501,13 +502,13 @@
     type: 'line',
     data: {
       labels: [
-        'Sunday',
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday'
+        'ראשון',
+        'שני',
+        'שלישי',
+        'רביעי',
+        'חמישי',
+        'שישי',
+        'שבת'
       ],
       datasets: [{
         data: [

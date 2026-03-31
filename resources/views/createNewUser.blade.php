@@ -25,45 +25,45 @@
         </div>
     @endif
 
-   <<form id="userForm" class="needs-validation" novalidate>
+   <form id="userForm" class="needs-validation" novalidate>
   <div class="mb-3">
-    <label for="name" class="form-label">Full Name</label>
+    <label for="name" class="form-label">שם מלא</label>
     <input type="text" class="form-control" id="name" name="name" required>
     <div class="invalid-feedback">
-      Please enter a full name.
+      נא להזין שם מלא.
     </div>
   </div>
 
   <div class="mb-3">
-    <label for="email" class="form-label">Email</label>
+    <label for="email" class="form-label">דוא"ל</label>
     <input type="email" class="form-control" id="email" name="email" required>
     <div class="invalid-feedback">
-      Please enter a valid email.
+      נא להזין דוא"ל תקין.
     </div>
   </div>
 
   <div class="mb-3">
-    <label for="password" class="form-label">Password</label>
+    <label for="password" class="form-label">סיסמה</label>
     <input type="password" class="form-control" id="password" name="password" minlength="6" required>
     <div class="invalid-feedback">
-      Password must be at least 6 characters.
+      הסיסמה חייבת להכיל לפחות 6 תווים.
     </div>
   </div>
 
   <div class="mb-3">
-    <label for="role" class="form-label">Role</label>
+    <label for="role" class="form-label">תפקיד</label>
     <select class="form-select" id="role" name="role" required>
-      <option value="">Choose...</option>
-      <option value="admin">Admin</option>
-      <option value="editor">Editor</option>
-      <option value="viewer">Viewer</option>
+      <option value="">בחר...</option>
+      <option value="admin">מנהל מערכת</option>
+      <option value="editor">עורך/ת</option>
+      <option value="viewer">צופה</option>
     </select>
     <div class="invalid-feedback">
-      Please select a role.
+      נא לבחור תפקיד.
     </div>
   </div>
 
-  <button type="submit" class="btn btn-primary">Create User</button>
+  <button type="submit" class="btn btn-primary">יצירת משתמש</button>
 </form>
 
 <script>

@@ -4,38 +4,43 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-
 
 class UserController extends Controller
 {
-     public function login (Request $request){
-        $credentials = $request->only('email', 'password');
-
-        $result = User::checkLoginUser($credentials);
-
-        if (is_array($result) && isset($result['error'])) {
-            return redirect()->route('login')->withErrors([
-                $result['error'] => $result['message']
-            ])->withInput($request->only('email'));
+    public function showLogin()
+    {
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
         }
 
-        
-        Auth::login($result);
-
-        // $user = User::getData(Auth::user()->email);
-        return view("crm",["user"=>$result]);
+        return view('auth.login');
     }
 
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-
-    public function showMain(){
-        if (!Auth::check()) {
-            return redirect()->route('login');
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors([
+                'email' => 'כתובת הדוא"ל או הסיסמה שגויים.',
+            ])->onlyInput('email');
         }
-        return view("crm");
+
+        $request->session()->regenerate();
+
+        return redirect()->route('dashboard');
     }
 
-   
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
 }

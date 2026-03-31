@@ -40,93 +40,93 @@
           <div class="card-body">
             <div class="d-flex align-items-center mb-3">
               <div>
-                <h1 class="h4 mb-2">New Lead</h1>
-                <div class="text-muted">Add a potential customer to your pipeline</div>
+                <h1 class="h4 mb-2">ליד חדש</h1>
+                <div class="text-muted">הוסיפו לקוח פוטנציאלי למשפך המכירות</div>
               </div>
             </div>
 
             <div class="row g-3">
               <div class="col-md-6">
-                <label for="firstName" class="form-label required">First Name</label>
+                <label for="firstName" class="form-label required">שם פרטי</label>
                 <input type="text" class="form-control" id="firstName" name="first_name" required>
-                <div class="invalid-feedback">Please enter the first name.</div>
+                <div class="invalid-feedback">נא להזין שם פרטי.</div>
               </div>
               <div class="col-md-6">
-                <label for="lastName" class="form-label required">Last Name</label>
+                <label for="lastName" class="form-label required">שם משפחה</label>
                 <input type="text" class="form-control" id="lastName" name="last_name" required>
-                <div class="invalid-feedback">Please enter the last name.</div>
+                <div class="invalid-feedback">נא להזין שם משפחה.</div>
               </div>
               <div class="col-md-8">
-                <label for="email" class="form-label required">Email</label>
+                <label for="email" class="form-label required">דוא"ל</label>
                 <input type="email" class="form-control" id="email" name="email" required>
-                <div class="invalid-feedback">Please enter a valid email.</div>
+                <div class="invalid-feedback">נא להזין דוא"ל תקין.</div>
               </div>
               <div class="col-md-4">
-                <label for="phone" class="form-label">Phone</label>
+                <label for="phone" class="form-label">טלפון</label>
                 <input type="tel" class="form-control" id="phone" name="phone" placeholder="+972-50-123-4567">
               </div>
               <div class="col-md-12">
-                <label for="company" class="form-label">Company</label>
-                <input type="text" class="form-control" id="company" name="company" placeholder="Company Ltd.">
+                <label for="company" class="form-label">חברה</label>
+                <input type="text" class="form-control" id="company" name="company" placeholder="חברת דוגמה בע\"מ">
               </div>
               <div class="col-md-6">
-                <label for="title" class="form-label">Job Title</label>
-                <input type="text" class="form-control" id="title" name="job_title" placeholder="Procurement Manager">
+                <label for="title" class="form-label">תפקיד</label>
+                <input type="text" class="form-control" id="title" name="job_title" placeholder="מנהל/ת רכש">
               </div>
               <div class="col-md-6">
-                <label for="website" class="form-label">Website</label>
+                <label for="website" class="form-label">אתר אינטרנט</label>
                 <input type="url" class="form-control" id="website" name="website" placeholder="https://example.com">
               </div>
             </div>
 
             <hr class="my-4">
-            <div class="form-section-title mb-2">Lead Details</div>
+            <div class="form-section-title mb-2">פרטי ליד</div>
             <div class="row g-3">
               <div class="col-md-6">
-                <label for="leadSource" class="form-label">Lead Source</label>
+                <label for="leadSource" class="form-label">מקור ליד</label>
                 <select class="form-select" id="leadSource" name="source">
-                  <option value="">Choose...</option>
-                  <option>Website</option>
-                  <option>Inbound Call</option>
-                  <option>Outbound</option>
-                  <option>Referral</option>
-                  <option>Event</option>
-                  <option>Social</option>
-                  <option>Partner</option>
+                  <option value="">בחר...</option>
+                  <option value="website">אתר אינטרנט</option>
+                  <option value="inbound_call">שיחה נכנסת</option>
+                  <option value="outbound">פנייה יוצאת</option>
+                  <option value="referral">הפניה</option>
+                  <option value="event">אירוע</option>
+                  <option value="social">רשת חברתית</option>
+                  <option value="partner">שותף</option>
                 </select>
               </div>
               <div class="col-md-6">
-                <label for="status" class="form-label">Status</label>
+                <label for="status" class="form-label">סטטוס</label>
                 <select class="form-select" id="status" name="status">
-                  <option>New</option>
-                  <option>Contacted</option>
-                  <option>Qualified</option>
-                  <option>Unqualified</option>
-                  <option>Disqualified</option>
+                  <option value="New">חדש</option>
+                  <option value="Contacted">בוצע קשר</option>
+                  <option value="Qualified">אושר</option>
+                  <option value="Unqualified">לא הוגדר</option>
+                  <option value="Disqualified">פסול</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label for="priority" class="form-label">Priority</label>
+                <label for="priority" class="form-label">עדיפות</label>
                 <select class="form-select" id="priority" name="priority">
-                  <option>Medium</option>
-                  <option>High</option>
-                  <option>Low</option>
+                  <option value="Medium">בינונית</option>
+                  <option value="High">גבוהה</option>
+                  <option value="Low">נמוכה</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label for="expectedValue" class="form-label">Expected Value ($)</label>
+                <label for="expectedValue" class="form-label">שווי צפוי ($)</label>
                 <input type="number" min="0" step="1" class="form-control" id="expectedValue" name="expected_value" placeholder="0">
               </div>
               <div class="col-md-4">
-                <label for="followUp" class="form-label">Follow-up Date</label>
+                <label for="followUp" class="form-label">תאריך מעקב</label>
                 <input type="date" class="form-control" id="followUp" name="follow_up">
               </div>
 
               <!-- Tags (chips) -->
               <div class="col-12">
-                <label class="form-label">Tags</label>
+                <label class="form-label">תגיות</label>
                 <div class="chip-input">
-                  <input id="tagsInput" type="text" class="form-control" placeholder="Type a tag and press Enter">
+                  <input id="tagsInput" type="text" class="form-control" placeholder="הקלידו תג ולחצו אנטר">
                   <div id="tagsArea" class="mt-2"></div>
                 </div>
                 <!-- hidden container for tags[] -->
@@ -135,31 +135,31 @@
             </div>
 
             <hr class="my-4">
-            <div class="form-section-title mb-2">Address</div>
+            <div class="form-section-title mb-2">כתובת</div>
             <div class="row g-3">
               <div class="col-md-8">
-                <label for="street" class="form-label">Street</label>
+                <label for="street" class="form-label">רחוב</label>
                 <input type="text" class="form-control" id="street" name="street">
               </div>
               <div class="col-md-4">
-                <label for="zip" class="form-label">ZIP</label>
+                <label for="zip" class="form-label">מיקוד</label>
                 <input type="text" class="form-control" id="zip" name="zip">
               </div>
               <div class="col-md-6">
-                <label for="city" class="form-label">City</label>
+                <label for="city" class="form-label">עיר</label>
                 <input type="text" class="form-control" id="city" name="city">
               </div>
               <div class="col-md-6">
-                <label for="country" class="form-label">Country</label>
-                <input type="text" class="form-control" id="country" name="country" placeholder="Israel">
+                <label for="country" class="form-label">מדינה</label>
+                <input type="text" class="form-control" id="country" name="country" placeholder="ישראל">
               </div>
             </div>
 
             <hr class="my-4">
-            <div class="form-section-title mb-2">Notes</div>
+            <div class="form-section-title mb-2">הערות</div>
             <div class="mb-3">
-              <label for="notes" class="form-label">Internal Notes</label>
-              <textarea id="notes" name="notes" rows="5" class="form-control" placeholder="Key pains, budget, timeline, competitors…"></textarea>
+              <label for="notes" class="form-label">הערות פנימיות</label>
+              <textarea id="notes" name="notes" rows="5" class="form-control" placeholder="כאבים מרכזיים, תקציב, ציר זמן, מתחרים..."></textarea>
             </div>
 
             <!-- GDPR (אופציונלי) -->
@@ -172,7 +172,7 @@
             --}}
 
             <div class="mb-3">
-              <label for="attachment" class="form-label">Attachment (optional)</label>
+              <label for="attachment" class="form-label">קובץ מצורף (אופציונלי)</label>
               <input class="form-control" type="file" id="attachment" name="attachment" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx">
             </div>
           </div>
@@ -183,30 +183,30 @@
       <div class="col-12 col-lg-4">
         <div class="card mb-4">
           <div class="card-body">
-            <div class="form-section-title mb-2">Assignment</div>
+            <div class="form-section-title mb-2">הקצאה</div>
             <div class="mb-3">
-              <label for="owner" class="form-label">Owner</label>
+              <label for="owner" class="form-label">אחראי</label>
               <select id="owner" name="owner" class="form-select">
-                <option value="">Unassigned</option>
-                <option value="me">Me</option>
-                <option value="sales-1">Sales – North</option>
-                <option value="sales-2">Sales – EMEA</option>
+                <option value="">ללא הקצאה</option>
+                <option value="me">אני</option>
+                <option value="sales-1">מכירות – צפון</option>
+                <option value="sales-2">מכירות – EMEA</option>
               </select>
             </div>
             <div class="mb-3">
-              <label for="pipeline" class="form-label">Pipeline</label>
+              <label for="pipeline" class="form-label">צינור מכירה</label>
               <select id="pipeline" name="pipeline" class="form-select">
-                <option>Default</option>
-                <option>Enterprise</option>
-                <option>SMB</option>
+                <option value="default">ברירת מחדל</option>
+                <option value="enterprise">ארגונים</option>
+                <option value="smb">SMB</option>
               </select>
             </div>
             <div class="mb-3">
-              <label for="stage" class="form-label">Stage</label>
+              <label for="stage" class="form-label">שלב</label>
               <select id="stage" name="stage" class="form-select">
-                <option>Lead</option>
-                <option>MQL</option>
-                <option>SQL</option>
+                <option value="lead">ליד</option>
+                <option value="mql">MQL (ליד שיווקי)</option>
+                <option value="sql">SQL (ליד מכירתי)</option>
               </select>
             </div>
           </div>
@@ -214,14 +214,14 @@
 
         <div class="card">
           <div class="card-body">
-            <div class="form-section-title mb-2">Visibility</div>
+            <div class="form-section-title mb-2">נראות</div>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="visibility" id="vis-team" value="team" checked>
-              <label class="form-check-label" for="vis-team">Team</label>
+              <label class="form-check-label" for="vis-team">צוות</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="visibility" id="vis-private" value="private">
-              <label class="form-check-label" for="vis-private">Private</label>
+              <label class="form-check-label" for="vis-private">פרטי</label>
             </div>
           </div>
         </div>
@@ -231,18 +231,18 @@
     <!-- Sticky actions -->
     <div class="sticky-actions mt-4 p-3 border-top">
       <div class="container">
-        <div class="d-flex gap-2 justify-content-end">
+        <div class="d-flex gap-2 justify-content-start">
           <button type="reset" class="btn btn-outline-secondary">
-            Reset
+            איפוס
           </button>
 
           <!-- שולח עם פרמטר save_new=1 -->
           <button type="submit" name="save_new" value="1" class="btn btn-outline-primary">
-            Save & New
+            שמירה וליד חדש
           </button>
 
           <button type="submit" class="btn btn-primary">
-            Save Lead
+            שמירת ליד
           </button>
         </div>
       </div>
