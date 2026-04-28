@@ -1,21 +1,7 @@
 @php
     $status = $status ?? null;
-    $statusLabels = [
-        'new' => 'חדש',
-        'contacted' => 'נוצר קשר',
-        'qualified' => 'מאושר',
-        'proposal' => 'הצעה',
-        'won' => 'נסגר בהצלחה',
-        'lost' => 'אבוד',
-    ];
-    $statusClasses = [
-        'new' => 'text-bg-secondary',
-        'contacted' => 'text-bg-primary',
-        'qualified' => 'text-bg-info',
-        'proposal' => 'text-bg-warning',
-        'won' => 'text-bg-success',
-        'lost' => 'text-bg-danger',
-    ];
+    $statusLabels = $statusLabels ?? \App\Models\LeadStatus::labels();
+    $statusClasses = $statusClasses ?? \App\Models\LeadStatus::badgeClasses();
 @endphp
 
 <span class="badge {{ $statusClasses[$status] ?? 'text-bg-secondary' }}">

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Notifications\LeadFollowUpScheduledNotification;
+use App\Notifications\LeadAssignedNotification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Http\Request;
@@ -39,5 +41,38 @@ class NotificationController extends Controller
         $notifications->each->markAsRead();
 
         return back()->with('success', 'התזכורות של היום סומנו כנקראו.');
+    }
+
+    public function leadAssignmentPopups(Request $request): JsonResponse
+    {
+        $user = $this->user();
+
+        $notifications = $user?->unreadNotifications()
+            ->where('type', LeadAssignedNotification::class)
+            ->oldest()
+            ->limit(5)
+            ->get() ?? collect();
+
+        $payload = $notifications
+            ->map(fn (DatabaseNotification $notification) => [
+                'id' => $notification->id,
+                'lead_id' => data_get($notification->data, 'lead_id'),
+                'lead_name' => data_get($notification->data, 'lead_name'),
+                'lead_email' => data_get($notification->data, 'lead_email'),
+                'lead_phone' => data_get($notification->data, 'lead_phone'),
+                'company' => data_get($notification->data, 'company'),
+                'interested_in' => data_get($notification->data, 'interested_in'),
+                'campaign' => data_get($notification->data, 'campaign'),
+                'entry_at_display' => data_get($notification->data, 'entry_at_display'),
+                'lead_url' => data_get($notification->data, 'lead_url'),
+                'message' => data_get($notification->data, 'message'),
+            ])
+            ->values();
+
+        $notifications->each->markAsRead();
+
+        return response()->json([
+            'notifications' => $payload,
+        ]);
     }
 }

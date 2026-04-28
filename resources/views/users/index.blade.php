@@ -9,7 +9,7 @@
 @endphp
 
 @section('pageTitle', 'משתמשי המערכת')
-@section('pageSubtitle', 'יצירה, עדכון ומחיקה של משתמשי CRM')
+@section('pageSubtitle', 'יצירה, עדכון ומחיקה של משתמשי EeasyCRM')
 
 @section('pageActions')
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">הוספת משתמש</button>

@@ -10,6 +10,8 @@ class Lead extends Model
 {
     use HasFactory;
 
+    private const ENTRY_TIMEZONE = 'Asia/Jerusalem';
+
     protected $fillable = [
         'first_name',
         'last_name',
@@ -24,10 +26,13 @@ class Lead extends Model
         'external_lead_id',
         'external_form_id',
         'external_campaign_id',
+        'external_campaign_name',
         'external_ad_id',
         'status',
         'priority',
         'expected_value',
+        'interested_in',
+        'lead_type',
         'follow_up',
         'follow_up_time',
         'tags',
@@ -111,5 +116,46 @@ class Lead extends Model
         return $this->follow_up_time
             ? $followUpAt->format('Y-m-d H:i')
             : $followUpAt->format('Y-m-d');
+    }
+
+    public function getEntryAtAttribute(): ?Carbon
+    {
+        $entryAt = $this->received_at ?? $this->created_at;
+
+        if (! $entryAt) {
+            return null;
+        }
+
+        $entryAt = $entryAt instanceof Carbon
+            ? $entryAt->copy()
+            : Carbon::parse($entryAt, config('app.timezone'));
+
+        return $entryAt->timezone(self::ENTRY_TIMEZONE);
+    }
+
+    public function getFormattedEntryAtAttribute(): ?string
+    {
+        return $this->entry_at?->format('Y-m-d H:i');
+    }
+
+    public function getCampaignDisplayAttribute(): ?string
+    {
+        $campaignName = trim((string) ($this->external_campaign_name ?? ''));
+
+        if ($campaignName !== '') {
+            return $campaignName;
+        }
+
+        $campaignId = trim((string) ($this->external_campaign_id ?? ''));
+
+        return $campaignId !== '' ? $campaignId : null;
+    }
+
+    public function getLeadTypeLabelAttribute(): string
+    {
+        return match ($this->lead_type) {
+            'returning' => 'חוזר',
+            default => 'חדש',
+        };
     }
 }

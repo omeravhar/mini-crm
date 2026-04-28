@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Astro v5.9.2">
-    <title>מערכת CRM - לוח בקרה</title>
+    <title>EeasyCRM - לוח בקרה</title>
     <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/dashboard/">
     <script src="{{asset('assets/js/color-modes.js')}}"></script>
    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.x/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-..." crossorigin="anonymous">
@@ -247,7 +247,7 @@
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
         </symbol>
     </svg>
-    <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow" data-bs-theme="dark"> <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="#">מערכת CRM</a>
+    <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow" data-bs-theme="dark"> <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="#">EeasyCRM</a>
         <ul class="navbar-nav flex-row d-md-none">
             <li class="nav-item text-nowrap"> <button class="nav-link px-3 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="הצגת חיפוש"> <svg class="bi" aria-hidden="true">
                         <use xlink:href="#search"></use>
@@ -263,7 +263,7 @@
             <div class="sidebar border border-end col-md-3 col-lg-2 p-0 bg-body-tertiary">
                 <div class="offcanvas-md offcanvas-end bg-body-tertiary" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
                     <div class="offcanvas-header">
-                        <h5 class="offcanvas-title" id="sidebarMenuLabel">מערכת CRM</h5> <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="סגירה"></button>
+                        <h5 class="offcanvas-title" id="sidebarMenuLabel">EeasyCRM</h5> <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="סגירה"></button>
                     </div>
                     <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
                         <ul class="nav flex-column">
@@ -306,7 +306,7 @@
                                 </a> </li>
                             <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="{{url('admin/showUsers')}}"> 
                                  <i class="bi bi-person-fill-gear"></i>
-                                    משתמשי CRM
+                                    משתמשי EeasyCRM
                                 </a> </li>
                             <!-- <li class="nav-item"> <a class="nav-link d-flex align-items-center gap-2" href="#"> 
                                 <i class="bi bi-person-fill-gear"></i>

@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lead;
+use App\Models\LeadStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class AnalyticsController extends Controller
 {
-    private const CLOSED_STATUSES = ['won', 'lost'];
-
     public function index(Request $request)
     {
         $this->requireAdmin();
+        $closedStatuses = LeadStatus::closedValues();
+        $statusLabels = LeadStatus::labels();
 
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
@@ -39,7 +40,7 @@ class AnalyticsController extends Controller
 
         $wonLeads = $closedLeads->where('status', 'won')->values();
         $lostLeads = $closedLeads->where('status', 'lost')->values();
-        $openLeads = $createdLeads->reject(fn (Lead $lead) => in_array($lead->status, self::CLOSED_STATUSES, true))->values();
+        $openLeads = $createdLeads->reject(fn (Lead $lead) => in_array($lead->status, $closedStatuses, true))->values();
 
         $averageCloseDays = round((float) $closedLeads->avg(function (Lead $lead) {
             if (! $lead->closed_at) {
@@ -51,12 +52,12 @@ class AnalyticsController extends Controller
 
         $users = User::orderBy('name')->get();
         $ownerPerformance = $users
-            ->map(function (User $user) use ($createdLeads, $closedLeads) {
+            ->map(function (User $user) use ($createdLeads, $closedLeads, $closedStatuses) {
                 $createdByOwner = $createdLeads->where('owner_id', $user->id)->values();
                 $closedByOwner = $closedLeads->where('owner_id', $user->id)->values();
                 $wonByOwner = $closedByOwner->where('status', 'won')->values();
                 $lostByOwner = $closedByOwner->where('status', 'lost')->values();
-                $openByOwner = $createdByOwner->reject(fn (Lead $lead) => in_array($lead->status, self::CLOSED_STATUSES, true))->values();
+                $openByOwner = $createdByOwner->reject(fn (Lead $lead) => in_array($lead->status, $closedStatuses, true))->values();
 
                 if ($createdByOwner->isEmpty() && $closedByOwner->isEmpty()) {
                     return null;
@@ -81,15 +82,6 @@ class AnalyticsController extends Controller
             })
             ->filter()
             ->values();
-
-        $statusLabels = [
-            'new' => 'חדש',
-            'contacted' => 'נוצר קשר',
-            'qualified' => 'מאושר',
-            'proposal' => 'הצעה',
-            'won' => 'נסגר בהצלחה',
-            'lost' => 'אבוד',
-        ];
 
         $statusDistribution = collect(array_keys($statusLabels))
             ->map(fn (string $status) => $createdLeads->where('status', $status)->count())

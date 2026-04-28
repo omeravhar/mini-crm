@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>כניסה למערכת CRM</title>
+    <title>כניסה ל-EeasyCRM</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet" crossorigin="anonymous">
     <style>
         body {
@@ -22,7 +22,7 @@
     <div class="card login-card">
         <div class="card-body p-4 p-md-5">
             <div class="mb-4">
-                <div class="text-muted small fw-semibold">מערכת CRM</div>
+                <div class="text-muted small fw-semibold">EeasyCRM</div>
                 <h1 class="h3 mb-1">התחברות</h1>
                 <p class="text-muted mb-0">הזן את פרטי הגישה שלך כדי להמשיך.</p>
             </div>

@@ -6,6 +6,8 @@ use App\Models\Integration;
 use App\Models\IntegrationFormMapping;
 use App\Models\User;
 use App\Models\WebhookEvent;
+use App\Support\IntegrationConnectionTester;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -101,6 +103,20 @@ class IntegrationController extends Controller
         return back()->with('success', 'מיפוי הטופס נמחק בהצלחה.');
     }
 
+    public function testStorePayload(Request $request, IntegrationConnectionTester $tester): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->runConnectionTest($request, $tester);
+    }
+
+    public function testUpdatePayload(Request $request, Integration $integration, IntegrationConnectionTester $tester): JsonResponse
+    {
+        $this->requireAdmin();
+
+        return $this->runConnectionTest($request, $tester, $integration->loadMissing('formMappings'));
+    }
+
     private function validatedIntegrationData(Request $request, ?Integration $integration = null): array
     {
         $data = $request->validate([
@@ -177,6 +193,7 @@ class IntegrationController extends Controller
     {
         return [
             'meta' => 'Meta / Facebook / Instagram',
+            'google' => 'Google Ads Lead Forms',
             'tiktok' => 'TikTok',
             'generic' => 'Webhook חיצוני כללי',
         ];
@@ -189,5 +206,62 @@ class IntegrationController extends Controller
             'active' => 'פעיל',
             'disabled' => 'מושבת',
         ];
+    }
+    private function runConnectionTest(Request $request, IntegrationConnectionTester $tester, ?Integration $integration = null): JsonResponse
+    {
+        $data = $this->validatedIntegrationData($request, $integration);
+        [$payload, $usedStoredFields] = $this->testPayload($data, $integration);
+        $result = $tester->test($payload, $integration, $usedStoredFields);
+
+        return response()->json($result);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{0: array<string, mixed>, 1: array<int, string>}
+     */
+    private function testPayload(array $data, ?Integration $integration = null): array
+    {
+        $usedStoredFields = [];
+
+        foreach ([
+            'access_token' => 'Access Token',
+            'refresh_token' => 'Refresh Token',
+            'verify_token' => 'Verify Token',
+            'webhook_secret' => 'Webhook Secret',
+        ] as $field => $label) {
+            if (($data[$field] ?? null) === '' || is_null($data[$field] ?? null)) {
+                if ($integration && filled($integration->{$field})) {
+                    $data[$field] = $integration->{$field};
+                    $usedStoredFields[] = $label;
+                }
+            }
+        }
+
+        $data['is_persisted'] = (bool) $integration;
+        $data['callback_url'] = $integration ? $this->callbackUrlFor($integration) : null;
+        $data['verify_url'] = $integration && $integration->platform === 'meta'
+            ? route('webhooks.meta.verify', ['integration' => $integration->webhook_key])
+            : null;
+        $data['active_form_ids'] = $integration
+            ? $integration->formMappings
+                ->where('is_active', true)
+                ->pluck('external_form_id')
+                ->map(fn ($formId) => (string) $formId)
+                ->values()
+                ->all()
+            : [];
+
+        return [$data, $usedStoredFields];
+    }
+
+    private function callbackUrlFor(Integration $integration): string
+    {
+        return match ($integration->platform) {
+            'meta' => route('webhooks.meta.receive', ['integration' => $integration->webhook_key]),
+            'google' => route('webhooks.google.receive', ['integration' => $integration->webhook_key]),
+            'tiktok' => route('webhooks.tiktok.receive', ['integration' => $integration->webhook_key]),
+            default => route('webhooks.generic.receive', ['integration' => $integration->webhook_key]),
+        };
     }
 }

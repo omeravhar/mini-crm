@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Mail\LeadFollowUpInviteMail;
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Models\LeadStatus;
 use App\Models\User;
+use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadFollowUpScheduledNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -34,6 +36,8 @@ class CrmCrudTest extends TestCase
                 'status' => 'new',
                 'priority' => 'high',
                 'expected_value' => 15000,
+                'interested_in' => 'Custom kitchen design',
+                'lead_type' => 'new',
                 'follow_up' => '2026-04-10',
                 'follow_up_time' => '10:30',
                 'tags_text' => 'enterprise, urgent',
@@ -53,6 +57,8 @@ class CrmCrudTest extends TestCase
 
         $this->assertSame($admin->id, $lead->created_by);
         $this->assertSame($owner->id, $lead->owner_id);
+        $this->assertSame('Custom kitchen design', $lead->interested_in);
+        $this->assertSame('new', $lead->lead_type);
 
         $this->actingAs($admin)
             ->put(route('leads.update', $lead), [
@@ -66,6 +72,8 @@ class CrmCrudTest extends TestCase
                 'status' => 'proposal',
                 'priority' => 'high',
                 'expected_value' => 17500,
+                'interested_in' => 'Premium kitchen package',
+                'lead_type' => 'returning',
                 'follow_up' => '2026-04-12',
                 'follow_up_time' => '11:15',
                 'tags_text' => 'proposal',
@@ -84,6 +92,8 @@ class CrmCrudTest extends TestCase
         $this->assertDatabaseHas('leads', [
             'id' => $lead->id,
             'status' => 'proposal',
+            'interested_in' => 'Premium kitchen package',
+            'lead_type' => 'returning',
             'pipeline' => 'enterprise',
             'stage' => 'negotiation',
         ]);
@@ -197,6 +207,167 @@ class CrmCrudTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_update_and_delete_custom_lead_statuses(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.lead-statuses.store'), [
+                'name' => 'Waiting Quote',
+                'slug' => 'waiting_quote',
+                'badge_class' => 'text-bg-warning',
+                'sort_order' => 80,
+            ])
+            ->assertRedirect(route('admin.lead-statuses.index'));
+
+        $status = LeadStatus::where('slug', 'waiting_quote')->firstOrFail();
+
+        $this->assertFalse($status->is_system);
+        $this->assertFalse($status->is_closed);
+
+        $this->actingAs($admin)
+            ->put(route('admin.lead-statuses.update', $status), [
+                'name' => 'Quote Sent',
+                'badge_class' => 'text-bg-success',
+                'sort_order' => 90,
+                'is_closed' => '1',
+            ])
+            ->assertRedirect(route('admin.lead-statuses.index'));
+
+        $status->refresh();
+
+        $this->assertSame('Quote Sent', $status->name);
+        $this->assertSame('text-bg-success', $status->badge_class);
+        $this->assertSame(90, $status->sort_order);
+        $this->assertTrue($status->is_closed);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.lead-statuses.destroy', $status))
+            ->assertRedirect(route('admin.lead-statuses.index'));
+
+        $this->assertDatabaseMissing('lead_statuses', [
+            'slug' => 'waiting_quote',
+        ]);
+    }
+
+    public function test_custom_lead_status_can_be_used_on_leads_and_cannot_be_deleted_while_in_use(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $status = LeadStatus::create([
+            'name' => 'Waiting Quote',
+            'slug' => 'waiting_quote',
+            'badge_class' => 'text-bg-warning',
+            'sort_order' => 80,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.saveNewLead'), [
+                'first_name' => 'Custom',
+                'last_name' => 'Status',
+                'email' => 'custom-status@example.com',
+                'phone' => '0503000000',
+                'company' => 'Kitchen Co',
+                'job_title' => 'Owner',
+                'source' => 'website',
+                'status' => 'waiting_quote',
+                'priority' => 'medium',
+                'expected_value' => null,
+                'interested_in' => 'Kitchen',
+                'follow_up' => null,
+                'follow_up_time' => null,
+                'tags_text' => '',
+                'street' => '',
+                'city' => '',
+                'zip' => '',
+                'country' => '',
+                'notes' => '',
+                'pipeline' => 'default',
+                'stage' => 'lead',
+                'visibility' => 'team',
+            ])
+            ->assertRedirect(route('admin.leads.index'));
+
+        $this->assertDatabaseHas('leads', [
+            'email' => 'custom-status@example.com',
+            'status' => 'waiting_quote',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.lead-statuses.destroy', $status))
+            ->assertSessionHasErrors('status');
+
+        $this->assertDatabaseHas('lead_statuses', [
+            'slug' => 'waiting_quote',
+        ]);
+    }
+
+    public function test_admin_can_create_a_lead_without_email(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create(['role' => 'editor']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.saveNewLead'), [
+                'first_name' => 'Rafi',
+                'last_name' => 'Cohen',
+                'email' => '',
+                'phone' => '0503000000',
+                'company' => 'Kitchen Co',
+                'job_title' => 'Owner',
+                'source' => 'website',
+                'status' => 'new',
+                'priority' => 'medium',
+                'expected_value' => null,
+                'interested_in' => 'Doors and kitchen',
+                'follow_up' => null,
+                'follow_up_time' => null,
+                'tags_text' => '',
+                'street' => '',
+                'city' => '',
+                'zip' => '',
+                'country' => '',
+                'notes' => 'Phone-only lead',
+                'owner_id' => $owner->id,
+                'pipeline' => 'default',
+                'stage' => 'lead',
+                'visibility' => 'team',
+            ])
+            ->assertRedirect(route('admin.leads.index'));
+
+        $lead = Lead::latest('id')->firstOrFail();
+
+        $this->assertSame('Rafi', $lead->first_name);
+        $this->assertNull($lead->email);
+        $this->assertSame('0503000000', $lead->phone);
+    }
+
+    public function test_lead_without_email_cannot_be_converted_to_customer(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $lead = Lead::create([
+            'first_name' => 'Phone',
+            'last_name' => 'Only',
+            'email' => null,
+            'phone' => '0503111111',
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->from(route('admin.leads.index'))
+            ->actingAs($admin)
+            ->post(route('leads.convert', $lead))
+            ->assertRedirect(route('admin.leads.index'))
+            ->assertSessionHasErrors('email');
+
+        $this->assertDatabaseMissing('customers', [
+            'lead_id' => $lead->id,
+        ]);
+    }
+
     public function test_admin_leads_fragment_returns_rendered_html_for_live_refresh(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -260,16 +431,65 @@ class CrmCrudTest extends TestCase
         ]);
     }
 
-    public function test_future_follow_up_update_sends_calendar_invite_to_assigned_user(): void
+    public function test_assigned_owner_receives_popup_notification_when_new_lead_is_created(): void
     {
-        Mail::fake();
-
         $admin = User::factory()->create(['role' => 'admin']);
-        $owner = User::factory()->create(['role' => 'editor', 'email' => 'owner@example.com']);
+        $owner = User::factory()->create(['role' => 'editor']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.saveNewLead'), [
+                'first_name' => 'Popup',
+                'last_name' => 'Lead',
+                'email' => 'popup@example.com',
+                'phone' => '0504000000',
+                'company' => 'Popup Co',
+                'job_title' => 'Owner',
+                'source' => 'website',
+                'status' => 'new',
+                'priority' => 'medium',
+                'expected_value' => null,
+                'interested_in' => 'Kitchen',
+                'follow_up' => null,
+                'follow_up_time' => null,
+                'tags_text' => '',
+                'street' => '',
+                'city' => '',
+                'zip' => '',
+                'country' => '',
+                'notes' => '',
+                'owner_id' => $owner->id,
+                'pipeline' => 'default',
+                'stage' => 'lead',
+                'visibility' => 'team',
+            ])
+            ->assertRedirect(route('admin.leads.index'));
+
+        $notification = $owner->unreadNotifications()
+            ->where('type', LeadAssignedNotification::class)
+            ->firstOrFail();
+
+        $this->actingAs($owner)
+            ->getJson(route('notifications.leadAssignmentPopups'))
+            ->assertOk()
+            ->assertJsonPath('notifications.0.lead_name', 'Popup Lead')
+            ->assertJsonPath('notifications.0.lead_phone', '0504000000')
+            ->assertJsonPath('notifications.0.company', 'Popup Co')
+            ->assertJsonPath('notifications.0.interested_in', 'Kitchen');
+
+        $this->assertNotNull($notification->fresh()->read_at);
+    }
+
+    public function test_assigned_owner_receives_popup_notification_when_existing_lead_is_assigned(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create(['role' => 'editor']);
         $lead = Lead::create([
-            'first_name' => 'Neta',
-            'last_name' => 'Bar',
-            'email' => 'neta@example.com',
+            'first_name' => 'Assigned',
+            'last_name' => 'Later',
+            'email' => 'assigned-later@example.com',
+            'phone' => '0504111111',
+            'company' => 'Later Co',
+            'owner_id' => null,
             'created_by' => $admin->id,
             'status' => 'new',
             'priority' => 'medium',
@@ -279,45 +499,129 @@ class CrmCrudTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->put(route('leads.update', $lead), [
+            ->postJson(route('admin.leads.assign', $lead), [
+                'owner_id' => $owner->id,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $owner->id,
+            'type' => LeadAssignedNotification::class,
+        ]);
+
+        $this->actingAs($owner)
+            ->getJson(route('notifications.leadAssignmentPopups'))
+            ->assertOk()
+            ->assertJsonPath('notifications.0.lead_name', 'Assigned Later')
+            ->assertJsonPath('notifications.0.lead_phone', '0504111111');
+    }
+
+    public function test_quick_update_endpoint_returns_json_and_updates_status_and_priority(): void
+    {
+        Carbon::setTestNow('2026-04-18 13:15:00');
+
+        try {
+            $user = User::factory()->create(['role' => 'editor']);
+            $lead = Lead::create([
+                'first_name' => 'Quick',
+                'last_name' => 'Update',
+                'email' => 'quick@example.com',
+                'owner_id' => $user->id,
+                'created_by' => $user->id,
+                'status' => 'new',
+                'priority' => 'medium',
+                'pipeline' => 'default',
+                'stage' => 'lead',
+                'visibility' => 'team',
+            ]);
+
+            $this->actingAs($user)
+                ->postJson(route('leads.quick-update', $lead), [
+                    'status' => 'won',
+                    'priority' => 'high',
+                ])
+                ->assertOk()
+                ->assertJsonFragment([
+                    'lead_id' => $lead->id,
+                    'status' => 'won',
+                    'priority' => 'high',
+                    'closed_at' => '2026-04-18 13:15',
+                ]);
+
+            $lead->refresh();
+
+            $this->assertSame('won', $lead->status);
+            $this->assertSame('high', $lead->priority);
+            $this->assertSame('2026-04-18 13:15', $lead->closed_at?->format('Y-m-d H:i'));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_future_follow_up_update_sends_calendar_invite_to_assigned_user(): void
+    {
+        Carbon::setTestNow('2026-04-10 08:00:00');
+        Mail::fake();
+
+        try {
+            $admin = User::factory()->create(['role' => 'admin']);
+            $owner = User::factory()->create(['role' => 'editor', 'email' => 'owner@example.com']);
+            $lead = Lead::create([
                 'first_name' => 'Neta',
                 'last_name' => 'Bar',
                 'email' => 'neta@example.com',
-                'phone' => '0501234567',
-                'company' => 'Bar Labs',
-                'job_title' => 'Manager',
-                'source' => 'website',
-                'status' => 'contacted',
-                'priority' => 'high',
-                'expected_value' => 25000,
-                'follow_up' => '2026-04-15',
-                'follow_up_time' => '14:45',
-                'tags_text' => 'priority',
-                'street' => '1 Main St',
-                'city' => 'Tel Aviv',
-                'zip' => '61000',
-                'country' => 'Israel',
-                'notes' => 'Needs quick response',
-                'owner_id' => $owner->id,
-                'pipeline' => 'enterprise',
-                'stage' => 'negotiation',
+                'created_by' => $admin->id,
+                'status' => 'new',
+                'priority' => 'medium',
+                'pipeline' => 'default',
+                'stage' => 'lead',
                 'visibility' => 'team',
-            ])
-            ->assertRedirect(route('admin.leads.index'));
+            ]);
 
-        Mail::assertQueued(LeadFollowUpInviteMail::class, function (LeadFollowUpInviteMail $mail) use ($lead, $owner) {
-            return $mail->hasTo('owner@example.com')
-                && $mail->lead->is($lead)
-                && $mail->recipient->is($owner)
-                && $mail->scheduledAt->format('Y-m-d H:i') === '2026-04-15 14:45';
-        });
+            $this->actingAs($admin)
+                ->put(route('leads.update', $lead), [
+                    'first_name' => 'Neta',
+                    'last_name' => 'Bar',
+                    'email' => 'neta@example.com',
+                    'phone' => '0501234567',
+                    'company' => 'Bar Labs',
+                    'job_title' => 'Manager',
+                    'source' => 'website',
+                    'status' => 'contacted',
+                    'priority' => 'high',
+                    'expected_value' => 25000,
+                    'interested_in' => 'Showroom visit',
+                    'follow_up' => '2026-04-15',
+                    'follow_up_time' => '14:45',
+                    'tags_text' => 'priority',
+                    'street' => '1 Main St',
+                    'city' => 'Tel Aviv',
+                    'zip' => '61000',
+                    'country' => 'Israel',
+                    'notes' => 'Needs quick response',
+                    'owner_id' => $owner->id,
+                    'pipeline' => 'enterprise',
+                    'stage' => 'negotiation',
+                    'visibility' => 'team',
+                ])
+                ->assertRedirect(route('admin.leads.index'));
 
-        $owner->refresh();
-        $notification = $owner->notifications()->where('type', LeadFollowUpScheduledNotification::class)->first();
+            Mail::assertQueued(LeadFollowUpInviteMail::class, function (LeadFollowUpInviteMail $mail) use ($lead, $owner) {
+                return $mail->hasTo('owner@example.com')
+                    && $mail->lead->is($lead)
+                    && $mail->recipient->is($owner)
+                    && $mail->scheduledAt->format('Y-m-d H:i') === '2026-04-15 14:45';
+            });
 
-        $this->assertNotNull($notification);
-        $this->assertSame($lead->id, data_get($notification?->data, 'lead_id'));
-        $this->assertSame('2026-04-15', data_get($notification?->data, 'scheduled_for_date'));
+            $owner->refresh();
+            $notification = $owner->notifications()->where('type', LeadFollowUpScheduledNotification::class)->first();
+
+            $this->assertNotNull($notification);
+            $this->assertSame($lead->id, data_get($notification?->data, 'lead_id'));
+            $this->assertSame('2026-04-15', data_get($notification?->data, 'scheduled_for_date'));
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_due_today_follow_up_is_shown_as_internal_alert(): void
@@ -406,6 +710,10 @@ class CrmCrudTest extends TestCase
             'last_name' => 'Gold',
             'email' => 'shira@example.com',
             'company' => 'Target Co',
+            'interested_in' => 'Kitchen package',
+            'lead_type' => 'returning',
+            'external_campaign_name' => 'Meta April',
+            'received_at' => '2026-04-15 08:30:00',
             'owner_id' => $owner->id,
             'created_by' => $admin->id,
             'status' => 'new',
@@ -422,9 +730,16 @@ class CrmCrudTest extends TestCase
             'last_name' => 'Mizrahi',
             'email' => 'avi@example.com',
             'company' => 'Other Co',
+            'interested_in' => 'Wardrobes',
+            'lead_type' => 'new',
+            'external_campaign_name' => 'Google May',
+            'received_at' => '2026-04-16 10:00:00',
+            'owner_id' => $owner->id,
             'created_by' => $admin->id,
-            'status' => 'lost',
-            'priority' => 'low',
+            'status' => 'new',
+            'priority' => 'high',
+            'follow_up' => '2026-04-21',
+            'follow_up_time' => '11:00',
             'pipeline' => 'default',
             'stage' => 'lead',
             'visibility' => 'team',
@@ -432,14 +747,14 @@ class CrmCrudTest extends TestCase
 
         $this->actingAs($admin)
             ->get(route('admin.leads.index', [
-                'q' => 'Shira',
-                'status' => 'new',
-                'priority' => 'high',
-                'owner_id' => $owner->id,
-                'follow_up_scope' => 'upcoming',
+                'campaign' => 'Meta April',
+                'lead_type' => 'returning',
             ]))
             ->assertOk()
             ->assertSee('Shira Gold')
+            ->assertSee('Kitchen package')
+            ->assertSee('2026-04-15 11:30')
+            ->assertSee('חוזר')
             ->assertDontSee('Avi Mizrahi');
     }
 
@@ -475,6 +790,7 @@ class CrmCrudTest extends TestCase
                     'status' => 'won',
                     'priority' => 'high',
                     'expected_value' => 9000,
+                    'interested_in' => 'Full project close',
                     'follow_up' => null,
                     'follow_up_time' => null,
                     'tags_text' => 'deal',
@@ -573,5 +889,52 @@ class CrmCrudTest extends TestCase
             ->assertSee('data-open-leads="1"', false)
             ->assertSee('data-won-leads="1"', false)
             ->assertSee('data-closed-leads="1"', false);
+    }
+
+    public function test_dashboard_includes_uncontacted_leads_stat(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Lead::create([
+            'first_name' => 'Dana',
+            'last_name' => 'Levi',
+            'email' => 'dana@example.com',
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Shir',
+            'last_name' => 'Cohen',
+            'email' => 'shir@example.com',
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Yael',
+            'last_name' => 'Amit',
+            'email' => 'yael@example.com',
+            'created_by' => $admin->id,
+            'status' => 'contacted',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('לא נוצר קשר')
+            ->assertViewHas('stats', fn (array $stats) => ($stats['uncontacted_leads'] ?? null) === 2);
     }
 }

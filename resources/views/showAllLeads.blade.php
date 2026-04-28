@@ -11,7 +11,7 @@
   </style>
   <!-- <nav class="navbar navbar-expand-lg bg-white border-bottom small">
     <div class="container-fluid">
-      <a class="navbar-brand fw-semibold" href="#"><i class="bi bi-boxes me-2"></i>CRM</a>
+      <a class="navbar-brand fw-semibold" href="#"><i class="bi bi-boxes me-2"></i>EeasyCRM</a>
       <span class="navbar-text text-muted">Create New Lead</span>
     </div>
   </nav> -->

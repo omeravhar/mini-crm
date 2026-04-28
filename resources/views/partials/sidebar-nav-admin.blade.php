@@ -18,6 +18,9 @@
         <a class="nav-link @if(request()->routeIs('admin.leads.index')) active @endif" href="{{ route('admin.leads.index') }}">
             <i class="bi bi-list-ul me-2"></i>כל הלידים
         </a>
+        <a class="nav-link @if(request()->routeIs('admin.lead-statuses.*')) active @endif" href="{{ route('admin.lead-statuses.index') }}">
+            <i class="bi bi-ui-checks-grid me-2"></i>סטטוסים
+        </a>
         <a class="nav-link @if(request()->routeIs('admin.analytics.*')) active @endif" href="{{ route('admin.analytics.index') }}">
             <i class="bi bi-graph-up-arrow me-2"></i>אנליטיקה ניהולית
         </a>

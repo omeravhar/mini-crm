@@ -10,18 +10,15 @@
         'social' => 'רשתות חברתיות',
         'partner' => 'שותף',
     ];
-    $statusLabels = [
-        'new' => 'חדש',
-        'contacted' => 'נוצר קשר',
-        'qualified' => 'מאושר',
-        'proposal' => 'הצעה',
-        'won' => 'נסגר בהצלחה',
-        'lost' => 'אבוד',
-    ];
+    $statusLabels = $statusLabels ?? [];
     $priorityLabels = [
         'low' => 'נמוכה',
         'medium' => 'בינונית',
         'high' => 'גבוהה',
+    ];
+    $leadTypeLabels = [
+        'new' => 'חדש',
+        'returning' => 'חוזר',
     ];
     $pipelineLabels = [
         'default' => 'ברירת מחדל',
@@ -42,7 +39,7 @@
 @endphp
 
 @section('pageTitle', $isEditing ? 'עריכת ליד' : 'יצירת ליד')
-@section('pageSubtitle', $isEditing ? 'עדכון פרטי הליד בבסיס הנתונים' : 'הוספת ליד חדש למערכת ה-CRM')
+@section('pageSubtitle', $isEditing ? 'עדכון פרטי הליד בבסיס הנתונים' : 'הוספת ליד חדש ל-EeasyCRM')
 
 @section('content')
     <form method="POST" action="{{ $isEditing ? route('leads.update', $lead) : route('admin.saveNewLead') }}" enctype="multipart/form-data">
@@ -67,7 +64,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="email">דוא"ל</label>
-                                <input class="form-control" id="email" name="email" type="email" value="{{ old('email', $lead->email) }}" required>
+                                <input class="form-control" id="email" name="email" type="email" value="{{ old('email', $lead->email) }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="phone">טלפון</label>
@@ -103,6 +100,9 @@
                             <div class="col-md-4">
                                 <label class="form-label" for="status">סטטוס</label>
                                 <select class="form-select" id="status" name="status" required>
+                                    @if ($lead->status && ! array_key_exists($lead->status, $statusLabels))
+                                        <option value="{{ $lead->status }}" selected>{{ $lead->status }}</option>
+                                    @endif
                                     @foreach ($options['statuses'] as $status)
                                         <option value="{{ $status }}" @selected(old('status', $lead->status) === $status)>{{ $statusLabels[$status] ?? $status }}</option>
                                     @endforeach
@@ -128,6 +128,22 @@
                                 <label class="form-label" for="follow_up_time">שעת מעקב</label>
                                 <input class="form-control" id="follow_up_time" name="follow_up_time" type="time" value="{{ old('follow_up_time', $lead->follow_up_time ? substr($lead->follow_up_time, 0, 5) : '') }}">
                                 <div class="form-text">אם נקבע תאריך מעקב, יש לבחור גם שעה להזמנת היומן.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="interested_in">במה התעניינ/ה?</label>
+                                <input class="form-control" id="interested_in" name="interested_in" value="{{ old('interested_in', $lead->interested_in) }}" placeholder="לדוגמה: מטבח חדש, דלתות פנים, ארונות אמבטיה">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="lead_type">סוג ליד</label>
+                                <select class="form-select" id="lead_type" name="lead_type">
+                                    @foreach ($options['lead_types'] as $leadType)
+                                        <option value="{{ $leadType }}" @selected(old('lead_type', $lead->lead_type) === $leadType)>{{ $leadTypeLabels[$leadType] ?? $leadType }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="external_campaign_name">שם הקמפיין</label>
+                                <input class="form-control" id="external_campaign_name" name="external_campaign_name" value="{{ old('external_campaign_name', $lead->external_campaign_name) }}" placeholder="לדוגמה: Spring Sale / Meta April">
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="tags_text">תגיות</label>

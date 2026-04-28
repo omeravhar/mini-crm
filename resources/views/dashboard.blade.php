@@ -1,22 +1,11 @@
 @extends('layouts.crm')
 
-@php
-    $statusLabels = [
-        'new' => 'חדש',
-        'contacted' => 'נוצר קשר',
-        'qualified' => 'מאושר',
-        'proposal' => 'הצעה',
-        'won' => 'נסגר בהצלחה',
-        'lost' => 'אבוד',
-    ];
-@endphp
-
 @section('pageTitle', 'לוח בקרה')
 @section('pageSubtitle', 'תמונת מצב חיה מתוך בסיס הנתונים')
 
 @section('content')
     <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card card-stat">
                 <div class="card-body">
                     <div class="text-muted small">סה"כ לידים</div>
@@ -24,7 +13,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card card-stat">
                 <div class="card-body">
                     <div class="text-muted small">לידים פתוחים</div>
@@ -32,7 +21,15 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-lg-4 col-md-6">
+            <div class="card card-stat">
+                <div class="card-body">
+                    <div class="text-muted small">לא נוצר קשר</div>
+                    <div class="display-6 fw-semibold">{{ $stats['uncontacted_leads'] }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-4 col-md-6">
             <div class="card card-stat">
                 <div class="card-body">
                     <div class="text-muted small">לקוחות</div>
@@ -41,10 +38,10 @@
             </div>
         </div>
         @if (! is_null($stats['users']))
-            <div class="col-xl-3 col-md-6">
+            <div class="col-xl col-lg-4 col-md-6">
                 <div class="card card-stat">
                     <div class="card-body">
-                        <div class="text-muted small">משתמשי CRM</div>
+                        <div class="text-muted small">משתמשי EeasyCRM</div>
                         <div class="display-6 fw-semibold">{{ $stats['users'] }}</div>
                     </div>
                 </div>

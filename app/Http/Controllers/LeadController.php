@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Mail\LeadFollowUpInviteMail;
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Models\LeadStatus;
 use App\Models\User;
 use App\Notifications\LeadFollowUpScheduledNotification;
+use App\Support\LeadAssignmentNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,19 +28,15 @@ class LeadController extends Controller
         'partner',
     ];
 
-    private const STATUSES = [
-        'new',
-        'contacted',
-        'qualified',
-        'proposal',
-        'won',
-        'lost',
-    ];
-
     private const PRIORITIES = [
         'low',
         'medium',
         'high',
+    ];
+
+    private const LEAD_TYPES = [
+        'new',
+        'returning',
     ];
 
     private const PIPELINES = [
@@ -68,12 +66,14 @@ class LeadController extends Controller
             'lead' => new Lead([
                 'status' => 'new',
                 'priority' => 'medium',
+                'lead_type' => 'new',
                 'pipeline' => 'default',
                 'stage' => 'lead',
                 'visibility' => 'team',
             ]),
             'users' => User::orderBy('name')->get(),
             'options' => $this->options(),
+            'statusLabels' => $this->statusLabels(),
             'isEditing' => false,
         ]);
     }
@@ -88,6 +88,7 @@ class LeadController extends Controller
         $lead->load('owner');
 
         $this->syncFollowUpArtifacts($lead);
+        $this->notifyLeadAssignment($lead);
 
         $route = $request->boolean('save_new')
             ? route('admin.leads.create')
@@ -132,6 +133,7 @@ class LeadController extends Controller
             'lead' => $lead,
             'users' => User::orderBy('name')->get(),
             'options' => $this->options(),
+            'statusLabels' => $this->statusLabels(),
             'isEditing' => true,
         ]);
     }
@@ -151,6 +153,7 @@ class LeadController extends Controller
         $lead->load('owner');
 
         $this->syncFollowUpArtifacts($lead, $previousOwnerId, $previousScheduleSignature);
+        $this->notifyLeadAssignment($lead, $previousOwnerId);
 
         return redirect()
             ->route($user->isAdmin() ? 'admin.leads.index' : 'leads.my')
@@ -186,6 +189,7 @@ class LeadController extends Controller
         $lead->load('owner');
 
         $this->syncFollowUpArtifacts($lead, $previousOwnerId, $previousScheduleSignature);
+        $this->notifyLeadAssignment($lead, $previousOwnerId);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -199,9 +203,52 @@ class LeadController extends Controller
         return back()->with('success', 'שיוך הליד עודכן בהצלחה.');
     }
 
+    public function quickUpdate(Request $request, Lead $lead)
+    {
+        $this->authorizeLead($lead);
+        $previousOwnerId = $lead->owner_id;
+        $previousScheduleSignature = $this->followUpSignature($lead);
+
+        $data = $request->validate([
+            'status' => ['sometimes', 'required', Rule::in($this->statusValues())],
+            'priority' => ['sometimes', 'required', Rule::in(self::PRIORITIES)],
+        ]);
+
+        abort_if(empty($data), 422, 'No lead fields were provided for update.');
+
+        if (array_key_exists('status', $data)) {
+            $this->syncClosedAtPayload($data, $lead);
+        }
+
+        $lead->update($data);
+        $lead->load('owner');
+
+        if (array_key_exists('status', $data)) {
+            $this->syncFollowUpArtifacts($lead, $previousOwnerId, $previousScheduleSignature);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'פרטי הליד עודכנו בהצלחה.',
+                'lead_id' => $lead->id,
+                'status' => $lead->status,
+                'priority' => $lead->priority,
+                'closed_at' => optional($lead->closed_at)->format('Y-m-d H:i'),
+            ]);
+        }
+
+        return back()->with('success', 'פרטי הליד עודכנו בהצלחה.');
+    }
+
     public function convertToCustomer(Lead $lead)
     {
         $this->authorizeLead($lead);
+
+        if (blank($lead->email)) {
+            return back()->withErrors([
+                'email' => 'לא ניתן להמיר ליד ללקוח בלי כתובת דוא"ל.',
+            ]);
+        }
 
         Customer::updateOrCreate(
             ['lead_id' => $lead->id],
@@ -249,15 +296,18 @@ class LeadController extends Controller
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150'],
+            'email' => ['nullable', 'email', 'max:150'],
             'phone' => ['nullable', 'string', 'max:50'],
             'company' => ['nullable', 'string', 'max:150'],
             'job_title' => ['nullable', 'string', 'max:150'],
             'website' => ['nullable', 'url', 'max:255'],
             'source' => ['nullable', Rule::in(self::SOURCES)],
-            'status' => ['required', Rule::in(self::STATUSES)],
+            'status' => ['required', Rule::in($this->statusValues())],
             'priority' => ['required', Rule::in(self::PRIORITIES)],
             'expected_value' => ['nullable', 'numeric', 'min:0'],
+            'interested_in' => ['nullable', 'string', 'max:255'],
+            'lead_type' => ['nullable', Rule::in(self::LEAD_TYPES)],
+            'external_campaign_name' => ['nullable', 'string', 'max:255'],
             'follow_up' => ['nullable', 'date', 'required_with:follow_up_time'],
             'follow_up_time' => ['nullable', 'date_format:H:i', 'required_with:follow_up'],
             'tags_text' => ['nullable', 'string', 'max:500'],
@@ -283,6 +333,8 @@ class LeadController extends Controller
 
         $this->syncClosedAtPayload($data, $lead);
 
+        $data['lead_type'] = $data['lead_type'] ?? $lead?->lead_type ?? 'new';
+
         if (empty($data['follow_up'])) {
             $data['follow_up_time'] = null;
         }
@@ -307,8 +359,9 @@ class LeadController extends Controller
     {
         return [
             'sources' => self::SOURCES,
-            'statuses' => self::STATUSES,
+            'statuses' => $this->statusValues(),
             'priorities' => self::PRIORITIES,
+            'lead_types' => self::LEAD_TYPES,
             'pipelines' => self::PIPELINES,
             'stages' => self::STAGES,
             'visibility' => self::VISIBILITY,
@@ -326,7 +379,9 @@ class LeadController extends Controller
             'leads' => $query->latest()->get(),
             'users' => User::orderBy('name')->get(),
             'options' => $this->options(),
+            'statusLabels' => $this->statusLabels(),
             'filters' => $filters,
+            'campaignOptions' => $this->campaignOptions(),
         ];
     }
 
@@ -341,8 +396,43 @@ class LeadController extends Controller
         return [
             'leads' => $query->latest()->get(),
             'options' => $this->options(),
+            'statusLabels' => $this->statusLabels(),
             'filters' => $filters,
+            'campaignOptions' => $this->campaignOptions($userId, true),
         ];
+    }
+
+    private function campaignOptions(?int $ownerId = null, bool $restrictToOwner = false): array
+    {
+        if ($restrictToOwner && ! $ownerId) {
+            return [];
+        }
+
+        $leads = Lead::query()
+            ->when($restrictToOwner, fn (Builder $query) => $query->where('owner_id', $ownerId))
+            ->where(function (Builder $query) {
+                $query
+                    ->whereNotNull('external_campaign_name')
+                    ->orWhereNotNull('external_campaign_id');
+            })
+            ->get(['external_campaign_name', 'external_campaign_id']);
+
+        $options = [];
+
+        foreach ($leads as $lead) {
+            $value = trim((string) ($lead->external_campaign_name ?: $lead->external_campaign_id));
+            $label = $lead->campaign_display;
+
+            if ($value === '' || ! $label || array_key_exists($value, $options)) {
+                continue;
+            }
+
+            $options[$value] = $label;
+        }
+
+        asort($options, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $options;
     }
 
     private function followUpSignature(Lead $lead): ?string
@@ -366,7 +456,7 @@ class LeadController extends Controller
         $followUpAt = $lead->follow_up_at;
         $currentSignature = $this->followUpSignature($lead);
         $today = Carbon::now(config('app.timezone'))->startOfDay();
-        $isClosedStatus = in_array($lead->status, ['won', 'lost'], true);
+        $isClosedStatus = in_array($lead->status, $this->closedStatuses(), true);
 
         if ($previousSignature !== null && $previousSignature === $currentSignature && ! $isClosedStatus) {
             return;
@@ -408,13 +498,20 @@ class LeadController extends Controller
             ->delete();
     }
 
+    private function notifyLeadAssignment(Lead $lead, ?int $previousOwnerId = null): void
+    {
+        app(LeadAssignmentNotifier::class)->notifyIfAssigned($lead, $previousOwnerId);
+    }
+
     private function leadFilters(Request $request, bool $allowOwnerFilter): array
     {
         return [
             'q' => trim((string) $request->input('q', '')),
             'status' => (string) $request->input('status', ''),
             'priority' => (string) $request->input('priority', ''),
+            'lead_type' => (string) $request->input('lead_type', ''),
             'owner_id' => $allowOwnerFilter ? (string) $request->input('owner_id', '') : '',
+            'campaign' => trim((string) $request->input('campaign', '')),
             'follow_up_scope' => (string) $request->input('follow_up_scope', ''),
         ];
     }
@@ -433,7 +530,10 @@ class LeadController extends Controller
                     ->orWhere('last_name', 'like', $term)
                     ->orWhere('email', 'like', $term)
                     ->orWhere('phone', 'like', $term)
-                    ->orWhere('company', 'like', $term);
+                    ->orWhere('company', 'like', $term)
+                    ->orWhere('interested_in', 'like', $term)
+                    ->orWhere('external_campaign_name', 'like', $term)
+                    ->orWhere('external_campaign_id', 'like', $term);
             });
 
             if ($tokens->count() > 1) {
@@ -451,12 +551,16 @@ class LeadController extends Controller
             }
         }
 
-        if (in_array($filters['status'], self::STATUSES, true)) {
+        if (in_array($filters['status'], $this->statusValues(), true)) {
             $query->where('status', $filters['status']);
         }
 
         if (in_array($filters['priority'], self::PRIORITIES, true)) {
             $query->where('priority', $filters['priority']);
+        }
+
+        if (in_array($filters['lead_type'], self::LEAD_TYPES, true)) {
+            $query->where('lead_type', $filters['lead_type']);
         }
 
         if ($allowOwnerFilter && $filters['owner_id'] !== '') {
@@ -465,6 +569,14 @@ class LeadController extends Controller
             } elseif (ctype_digit($filters['owner_id'])) {
                 $query->where('owner_id', (int) $filters['owner_id']);
             }
+        }
+
+        if ($filters['campaign'] !== '') {
+            $query->where(function (Builder $builder) use ($filters) {
+                $builder
+                    ->where('external_campaign_name', $filters['campaign'])
+                    ->orWhere('external_campaign_id', $filters['campaign']);
+            });
         }
 
         $today = Carbon::now(config('app.timezone'))->toDateString();
@@ -480,8 +592,9 @@ class LeadController extends Controller
 
     private function syncClosedAtPayload(array &$data, ?Lead $lead = null): void
     {
-        $isClosedStatus = in_array($data['status'], ['won', 'lost'], true);
-        $wasClosedStatus = $lead ? in_array($lead->status, ['won', 'lost'], true) : false;
+        $closedStatuses = $this->closedStatuses();
+        $isClosedStatus = in_array($data['status'], $closedStatuses, true);
+        $wasClosedStatus = $lead ? in_array($lead->status, $closedStatuses, true) : false;
 
         if (! $isClosedStatus) {
             $data['closed_at'] = null;
@@ -502,5 +615,20 @@ class LeadController extends Controller
         }
 
         $data['closed_at'] = now();
+    }
+
+    private function statusValues(): array
+    {
+        return LeadStatus::values();
+    }
+
+    private function statusLabels(): array
+    {
+        return LeadStatus::labels();
+    }
+
+    private function closedStatuses(): array
+    {
+        return LeadStatus::closedValues();
     }
 }
