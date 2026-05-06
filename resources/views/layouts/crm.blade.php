@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('pageTitle', 'EeasyCRM')</title>
+    <title>@yield('pageTitle', config('app.name', 'EeasyCRM'))</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -22,6 +22,38 @@
         .mobile-sidebar {
             width: min(86vw, 320px);
         }
+        .app-brand {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.55rem;
+            min-width: 0;
+            color: inherit;
+            line-height: 1.1;
+            text-decoration: none;
+        }
+        .navbar-brand.app-brand {
+            margin-inline-end: 0;
+            max-width: min(58vw, 28rem);
+        }
+        .app-brand__name {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .app-brand__slogan {
+            display: inline-block;
+            max-width: 14rem;
+            overflow: hidden;
+            color: rgba(255, 255, 255, 0.72);
+            direction: ltr;
+            font-size: 0.78rem;
+            font-weight: 500;
+            text-overflow: ellipsis;
+            unicode-bidi: isolate;
+            white-space: nowrap;
+        }
+        .app-brand--dark .app-brand__slogan {
+            color: #6c757d;
+        }
         .nav-pills .nav-link.active { background: #0d6efd; }
         .card-stat { border: 0; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
         .mobile-record-card {
@@ -38,6 +70,44 @@
         }
         .admin-leads-filter {
             background: #fff;
+            container-type: inline-size;
+        }
+        .admin-leads-filter .card-body {
+            padding: 0.9rem 1rem;
+        }
+        .admin-leads-filter__grid {
+            --bs-gutter-x: 0.7rem;
+            --bs-gutter-y: 0.65rem;
+        }
+        .admin-leads-filter .form-label {
+            margin-bottom: 0.35rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .admin-leads-filter .form-control,
+        .admin-leads-filter .form-select {
+            min-height: 2.2rem;
+            padding-block: 0.32rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .admin-leads-filter .btn {
+            min-height: 2.2rem;
+            padding: 0.32rem 0.58rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .admin-leads-filter__search {
+            width: 100%;
+        }
+        .admin-leads-filter__select {
+            min-width: 8.25rem;
+        }
+        .admin-leads-filter__date {
+            min-width: 10.25rem;
+        }
+        .admin-leads-filter__actions {
+            min-width: 4.1rem;
         }
         .lead-management-table .lead-owner-cell {
             width: 9.5rem;
@@ -145,6 +215,14 @@
             box-shadow: 0 16px 42px rgba(15, 23, 42, 0.18);
             padding: 0.95rem;
         }
+        .login-open-leads-toast {
+            border-color: #d1fae5;
+            border-inline-start-color: #10b981;
+        }
+        .login-open-leads-toast__count {
+            color: #047857;
+            font-weight: 800;
+        }
         .lead-assignment-toast__title {
             font-weight: 700;
             color: #0f172a;
@@ -196,6 +274,41 @@
             }
         }
 
+        @media (min-width: 1200px) {
+            .admin-leads-filter__search {
+                width: min(16rem, 100%);
+            }
+        }
+
+        @container (min-width: 1220px) {
+            .admin-leads-filter__grid {
+                --bs-gutter-x: 0.55rem;
+                flex-wrap: nowrap;
+            }
+            .admin-leads-filter__search {
+                flex: 1.35 1 0;
+                min-width: 11.5rem;
+                width: auto;
+            }
+            .admin-leads-filter__date {
+                flex: 1 1 0;
+                min-width: 8.6rem;
+            }
+            .admin-leads-filter__select {
+                flex: 1 1 0;
+                min-width: 7.3rem;
+            }
+            .admin-leads-filter__actions {
+                flex: 0 0 4.5rem;
+                min-width: 4.5rem;
+            }
+            .admin-leads-filter .form-control,
+            .admin-leads-filter .form-select,
+            .admin-leads-filter .btn {
+                font-size: 0.76rem;
+            }
+        }
+
         @media (max-width: 991.98px) {
             .lead-assignment-toast-container {
                 right: 1rem;
@@ -214,11 +327,18 @@
             .navbar-user {
                 font-size: 0.875rem;
             }
+            .app-brand__slogan {
+                max-width: 8.5rem;
+                font-size: 0.7rem;
+            }
         }
     </style>
+    @include('partials.global-css')
 </head>
 <body>
     @php
+        $appName = config('app.name', 'EeasyCRM');
+        $appSlogan = config('app.slogan', 'Exactly What You Need');
         $roleLabels = [
             'admin' => 'מנהל',
             'editor' => 'עורך',
@@ -237,7 +357,10 @@
                 >
                     <i class="bi bi-list fs-5"></i>
                 </button>
-                <a class="navbar-brand fw-semibold mb-0" href="{{ route('dashboard') }}">EeasyCRM</a>
+                <a class="navbar-brand app-brand fw-semibold mb-0" href="{{ route('dashboard') }}">
+                    <span class="app-brand__name">{{ $appName }}</span>
+                    <span class="app-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
+                </a>
             </div>
             <div class="d-flex align-items-center gap-2 gap-lg-3 text-white navbar-user">
                 <div class="small text-start">
@@ -254,7 +377,10 @@
 
     <div class="offcanvas offcanvas-start mobile-sidebar d-lg-none" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
         <div class="offcanvas-header border-bottom">
-            <h5 class="offcanvas-title" id="mobileSidebarLabel">EeasyCRM</h5>
+            <h5 class="offcanvas-title app-brand app-brand--dark" id="mobileSidebarLabel">
+                <span class="app-brand__name">{{ $appName }}</span>
+                <span class="app-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
@@ -273,7 +399,7 @@
             <main class="col-12 col-lg-10 p-3 p-lg-4">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
                     <div>
-                        <h1 class="h3 mb-1">@yield('pageTitle', 'EeasyCRM')</h1>
+                        <h1 class="h3 mb-1">@yield('pageTitle', $appName)</h1>
                         <div class="text-muted">@yield('pageSubtitle')</div>
                     </div>
                     <div class="page-actions d-grid d-sm-flex gap-2">
@@ -287,6 +413,31 @@
             </main>
         </div>
     </div>
+
+    @if ($loginOpenLeadsPopup = session('login_open_leads_popup'))
+        <div class="lead-assignment-toast-container" data-lead-assignment-toast-container>
+            <div class="lead-assignment-toast login-open-leads-toast" data-login-open-leads-toast>
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="lead-assignment-toast__title">שלום {{ $loginOpenLeadsPopup['name'] }}</div>
+                        <div class="lead-assignment-toast__details">
+                            <div>
+                                יש לך
+                                <span class="login-open-leads-toast__count">{{ $loginOpenLeadsPopup['open_leads_count'] }}</span>
+                                לידים פתוחים שממתינים לטיפולך
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="lead-assignment-toast__close"
+                        data-login-open-leads-toast-close
+                        aria-label="סגירה"
+                    >×</button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script>
@@ -328,6 +479,25 @@
 
                 applyLeadStatusTheme(select);
             });
+        })();
+    </script>
+    <script>
+        (() => {
+            const toast = document.querySelector('[data-login-open-leads-toast]');
+
+            if (!toast) {
+                return;
+            }
+
+            const closeToast = () => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                window.setTimeout(() => toast.remove(), 180);
+            };
+
+            toast.style.transition = 'opacity .18s ease, transform .18s ease';
+            toast.querySelector('[data-login-open-leads-toast-close]')?.addEventListener('click', closeToast);
+            window.setTimeout(closeToast, 12000);
         })();
     </script>
     @auth

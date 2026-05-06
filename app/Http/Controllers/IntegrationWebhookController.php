@@ -11,33 +11,44 @@ use Symfony\Component\HttpFoundation\Response;
 
 class IntegrationWebhookController extends Controller
 {
-    public function metaVerify(Request $request, Integration $integration): Response
+    public function metaVerify(Request $request, string $integration): Response
     {
-        abort_unless(
-            $integration->platform === 'meta'
-            && in_array($integration->status, ['draft', 'active'], true),
-            404
-        );
+        $integrationModel = $this->findIntegrationByWebhookKey($integration);
+
+        if (! $integrationModel || $integrationModel->platform !== 'meta' || ! in_array($integrationModel->status, ['draft', 'active'], true)) {
+            $this->logRejectedWebhook($request, 'meta', $integrationModel, 'Meta verify rejected: invalid webhook key, platform, or status.');
+
+            abort(404);
+        }
 
         $mode = $request->query('hub_mode');
         $verifyToken = $request->query('hub_verify_token');
         $challenge = $request->query('hub_challenge');
 
-        abort_unless(
-            $mode === 'subscribe'
-            && $integration->verify_token
-            && hash_equals($integration->verify_token, (string) $verifyToken),
-            403
-        );
+        if (
+            $mode !== 'subscribe'
+            || ! $integrationModel->verify_token
+            || ! hash_equals($integrationModel->verify_token, (string) $verifyToken)
+        ) {
+            $this->logRejectedWebhook($request, 'meta', $integrationModel, 'Meta verify rejected: verify token mismatch.');
+
+            abort(403);
+        }
 
         return response((string) $challenge, 200);
     }
 
-    public function metaReceive(Request $request, Integration $integration): JsonResponse
+    public function metaReceive(Request $request, string $integration): JsonResponse
     {
-        abort_unless($integration->platform === 'meta' && $integration->status === 'active', 404);
+        $integrationModel = $this->findIntegrationByWebhookKey($integration);
 
-        return $this->receive($request, $integration, 'meta');
+        if (! $integrationModel || $integrationModel->platform !== 'meta' || $integrationModel->status !== 'active') {
+            $this->logRejectedWebhook($request, 'meta', $integrationModel, 'Meta webhook rejected: invalid webhook key, platform, or inactive integration.');
+
+            abort(404);
+        }
+
+        return $this->receive($request, $integrationModel, 'meta');
     }
 
     public function googleReceive(Request $request, Integration $integration): JsonResponse
@@ -114,6 +125,35 @@ class IntegrationWebhookController extends Controller
             'status' => 'accepted',
             'event_id' => $event->id,
         ], $successStatus);
+    }
+
+    private function findIntegrationByWebhookKey(string $webhookKey): ?Integration
+    {
+        return Integration::where('webhook_key', $webhookKey)->first();
+    }
+
+    private function logRejectedWebhook(Request $request, string $platform, ?Integration $integration, string $message): void
+    {
+        WebhookEvent::create([
+            'integration_id' => $integration?->id,
+            'platform' => $platform,
+            'event_type' => $request->isMethod('GET') ? 'webhook_verify' : $this->extractEventType($platform, $this->payloadFromRequest($request)),
+            'external_event_id' => null,
+            'external_form_id' => null,
+            'status' => 'rejected',
+            'headers' => collect($request->headers->all())
+                ->map(fn (array $values) => implode(', ', $values))
+                ->all(),
+            'payload' => [
+                'query' => $request->query(),
+                'body' => $this->payloadFromRequest($request),
+                'path' => $request->path(),
+                'method' => $request->method(),
+            ],
+            'error_message' => $message,
+            'received_at' => now(),
+            'processed_at' => now(),
+        ]);
     }
 
     private function extractEventType(string $platform, array $payload): string

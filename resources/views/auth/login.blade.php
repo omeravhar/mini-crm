@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>כניסה ל-EeasyCRM</title>
+    <title>כניסה ל-{{ config('app.name', 'EeasyCRM') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet" crossorigin="anonymous">
     <style>
         body {
@@ -16,13 +16,35 @@
             border: 0;
             box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
         }
+        .login-brand {
+            display: inline-flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            line-height: 1.1;
+        }
+        .login-brand__slogan {
+            color: #6c757d;
+            direction: ltr;
+            font-size: 0.78rem;
+            font-weight: 500;
+            unicode-bidi: isolate;
+        }
     </style>
+    @include('partials.global-css')
 </head>
+@php
+    $appName = config('app.name', 'EeasyCRM');
+    $appSlogan = config('app.slogan', 'Exactly What You Need');
+@endphp
 <body class="d-flex align-items-center justify-content-center">
     <div class="card login-card">
         <div class="card-body p-4 p-md-5">
             <div class="mb-4">
-                <div class="text-muted small fw-semibold">EeasyCRM</div>
+                <div class="login-brand text-muted small fw-semibold">
+                    <span>{{ $appName }}</span>
+                    <span class="login-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
+                </div>
                 <h1 class="h3 mb-1">התחברות</h1>
                 <p class="text-muted mb-0">הזן את פרטי הגישה שלך כדי להמשיך.</p>
             </div>

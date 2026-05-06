@@ -314,6 +314,11 @@
                                     @endif
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap">
+                                    @if ($integration->platform === 'meta')
+                                        <button class="btn btn-outline-primary" type="button" data-integration-sync-button data-sync-url="{{ route('admin.integrations.meta.sync', $integration) }}">
+                                            סנכרון Meta
+                                        </button>
+                                    @endif
                                     <button class="btn btn-outline-secondary" type="button" data-integration-test-button>
                                         בדיקת חיבור
                                     </button>
@@ -529,6 +534,7 @@
                                         match($event->status) {
                                             'processed' => 'text-bg-success',
                                             'failed' => 'text-bg-danger',
+                                            'rejected' => 'text-bg-danger',
                                             'pending_fetch' => 'text-bg-warning',
                                             'processing' => 'text-bg-info',
                                             default => 'text-bg-secondary',
@@ -710,6 +716,65 @@
                 } catch (error) {
                     console.error(error);
                     renderError(testResult, 'לא הצלחתי לבדוק את החיבור כרגע. בדוק שהשרת יכול לצאת לאינטרנט ונסה שוב.');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalLabel;
+                }
+            });
+
+            document.addEventListener('click', async (event) => {
+                const button = event.target.closest('[data-integration-sync-button]');
+                if (!button) {
+                    return;
+                }
+
+                const form = button.closest('form[data-integration-config-form]');
+                const testResult = form?.querySelector('[data-integration-test-result]');
+                const syncUrl = button.dataset.syncUrl;
+
+                if (!form || !testResult || !syncUrl) {
+                    return;
+                }
+
+                const originalLabel = button.textContent;
+
+                button.disabled = true;
+                button.textContent = 'מסנכרן...';
+                testResult.hidden = false;
+                testResult.innerHTML = '<div class="alert alert-secondary mb-0">המערכת בודקת את Meta, מחברת leadgen ומסנכרנת טפסים...</div>';
+
+                try {
+                    const response = await fetch(syncUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken ?? '',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    let payload = null;
+
+                    try {
+                        payload = await response.json();
+                    } catch (error) {
+                        payload = null;
+                    }
+
+                    if (!response.ok) {
+                        renderError(
+                            testResult,
+                            payload?.message || 'סנכרון Meta נכשל.',
+                            payload?.errors || {}
+                        );
+
+                        return;
+                    }
+
+                    renderResult(testResult, payload);
+                } catch (error) {
+                    console.error(error);
+                    renderError(testResult, 'לא הצלחנו להריץ סנכרון מול Meta כרגע. בדוק שהשרת יכול לצאת לאינטרנט ונסה שוב.');
                 } finally {
                     button.disabled = false;
                     button.textContent = originalLabel;

@@ -7,6 +7,7 @@ use App\Models\IntegrationFormMapping;
 use App\Models\User;
 use App\Models\WebhookEvent;
 use App\Support\IntegrationConnectionTester;
+use App\Support\MetaIntegrationSynchronizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -115,6 +116,15 @@ class IntegrationController extends Controller
         $this->requireAdmin();
 
         return $this->runConnectionTest($request, $tester, $integration->loadMissing('formMappings'));
+    }
+
+    public function syncMeta(Integration $integration, MetaIntegrationSynchronizer $synchronizer): JsonResponse
+    {
+        $this->requireAdmin();
+
+        abort_unless($integration->platform === 'meta', 404);
+
+        return response()->json($synchronizer->sync($integration));
     }
 
     private function validatedIntegrationData(Request $request, ?Integration $integration = null): array

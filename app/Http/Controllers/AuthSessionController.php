@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuthActivityLog;
+use App\Models\Lead;
+use App\Models\LeadStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,7 +74,12 @@ class AuthSessionController extends Controller
             AuthActivityLog::STATUS_SUCCESS
         );
 
-        return redirect()->route('dashboard');
+        return redirect()
+            ->route('dashboard')
+            ->with('login_open_leads_popup', [
+                'name' => $user?->name ?? '',
+                'open_leads_count' => $user ? $this->openAssignedLeadsCount($user) : 0,
+            ]);
     }
 
     public function logout(Request $request)
@@ -119,5 +126,18 @@ class AuthSessionController extends Controller
         } catch (Throwable $exception) {
             report($exception);
         }
+    }
+
+    private function openAssignedLeadsCount(User $user): int
+    {
+        $closedStatuses = LeadStatus::closedValues();
+
+        return Lead::query()
+            ->where('owner_id', $user->id)
+            ->where(function ($query) use ($closedStatuses) {
+                $query->whereNull('status')
+                    ->orWhereNotIn('status', $closedStatuses);
+            })
+            ->count();
     }
 }

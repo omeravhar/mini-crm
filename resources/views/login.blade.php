@@ -132,6 +132,7 @@
             background-color: grey !important;
         }
     </style>
+    @include('partials.global-css')
 </head>
 
 <body class="d-flex align-items-center py-4 bg-body-tertiary"> <svg xmlns="http://www.w3.org/2000/svg" class="d-none">

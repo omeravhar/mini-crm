@@ -26,9 +26,17 @@
     <form method="GET" action="{{ route('leads.my') }}" class="card shadow-sm border-0 mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
-                <div class="col-xl-4">
+                <div class="col-xl-3">
                     <label class="form-label" for="q">חיפוש</label>
                     <input class="form-control" id="q" name="q" value="{{ $filters['q'] }}" placeholder="שם, דוא&quot;ל, חברה, טלפון, התעניינות או קמפיין">
+                </div>
+                <div class="col-sm-6 col-xl-auto">
+                    <label class="form-label" for="entry_from">מתאריך</label>
+                    <input class="form-control" id="entry_from" name="entry_from" type="date" value="{{ $filters['entry_from'] }}">
+                </div>
+                <div class="col-sm-6 col-xl-auto">
+                    <label class="form-label" for="entry_to">עד תאריך</label>
+                    <input class="form-control" id="entry_to" name="entry_to" type="date" value="{{ $filters['entry_to'] }}">
                 </div>
                 <div class="col-sm-6 col-xl">
                     <label class="form-label" for="status">סטטוס</label>

@@ -155,6 +155,7 @@
   padding: .75rem 1rem;
 }
     </style>
+    @include('partials.global-css')
 </head>
 
 <body> <svg xmlns="http://www.w3.org/2000/svg" class="d-none">

@@ -11,9 +11,12 @@ use App\Support\LeadAssignmentNotifier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class ProcessWebhookEvent implements ShouldQueue
@@ -42,6 +45,13 @@ class ProcessWebhookEvent implements ShouldQueue
             $payload = is_array($event->payload) ? $event->payload : [];
             $normalizedLead = $this->extractNormalizedLeadPayload($payload);
             $externalFormId = $event->external_form_id ?: $this->extractExternalFormId($payload, $normalizedLead);
+            $pendingFetchMessage = null;
+
+            if (! $normalizedLead && $event->platform === 'meta') {
+                $normalizedLead = $this->fetchMetaLeadPayload($event, $payload, $pendingFetchMessage);
+                $externalFormId = $externalFormId ?: $this->extractExternalFormId($payload, $normalizedLead);
+            }
+
             $mapping = $this->resolveFormMapping($event, $externalFormId);
 
             if (! $normalizedLead && $event->platform === 'generic' && $payload !== []) {
@@ -49,6 +59,12 @@ class ProcessWebhookEvent implements ShouldQueue
             }
 
             if (! $normalizedLead) {
+                if ($pendingFetchMessage) {
+                    $this->markPendingFetch($event, $pendingFetchMessage);
+
+                    return;
+                }
+
                 $this->markPendingFetch($event, 'האירוע התקבל ונשמר, אך נדרש חיבור API מלא למשיכת פרטי ליד מהפלטפורמה.');
 
                 return;
@@ -333,6 +349,163 @@ class ProcessWebhookEvent implements ShouldQueue
         }
 
         return array_filter($normalizedLead, fn ($value) => ! is_null($value) && $value !== '' && $value !== []);
+    }
+
+    private function fetchMetaLeadPayload(WebhookEvent $event, array &$payload, ?string &$pendingFetchMessage): ?array
+    {
+        $leadId = $this->extractExternalLeadId($payload);
+
+        if (! $leadId) {
+            $pendingFetchMessage = 'Meta webhook was saved, but it did not include a leadgen_id to fetch.';
+
+            return null;
+        }
+
+        $accessToken = $event->integration?->access_token;
+
+        if (! filled($accessToken)) {
+            $pendingFetchMessage = 'Meta webhook was saved, but the integration has no Access Token for fetching lead details.';
+
+            return null;
+        }
+
+        try {
+            $response = Http::baseUrl((string) config('services.meta.graph_api_base', 'https://graph.facebook.com/v23.0'))
+                ->acceptJson()
+                ->timeout(15)
+                ->connectTimeout(10)
+                ->get($leadId, [
+                    'fields' => implode(',', [
+                        'id',
+                        'created_time',
+                        'ad_id',
+                        'ad_name',
+                        'adset_id',
+                        'adset_name',
+                        'campaign_id',
+                        'campaign_name',
+                        'form_id',
+                        'field_data',
+                    ]),
+                    'access_token' => $accessToken,
+                ]);
+        } catch (ConnectionException $exception) {
+            $pendingFetchMessage = 'Meta webhook was saved, but the server could not connect to Meta: '.$exception->getMessage();
+
+            return null;
+        }
+
+        if (! $response->successful()) {
+            $pendingFetchMessage = (string) data_get(
+                $response->json(),
+                'error.message',
+                'Meta webhook was saved, but Meta rejected the lead details request. HTTP '.$response->status().'.'
+            );
+
+            return null;
+        }
+
+        $fetchedPayload = $response->json();
+
+        if (! is_array($fetchedPayload)) {
+            $pendingFetchMessage = 'Meta webhook was saved, but Meta returned an invalid lead details payload.';
+
+            return null;
+        }
+
+        $payload['_meta_fetched_lead'] = $fetchedPayload;
+        $event->forceFill(['payload' => $payload])->save();
+
+        return $this->normalizeMetaLeadResponse($fetchedPayload, $payload);
+    }
+
+    private function normalizeMetaLeadResponse(array $metaLead, array $webhookPayload): array
+    {
+        $normalizedLead = [
+            'external_lead_id' => $this->stringValue($metaLead['id'] ?? null) ?: $this->extractExternalLeadId($webhookPayload),
+            'external_form_id' => $this->stringValue($metaLead['form_id'] ?? null) ?: $this->extractExternalFormId($webhookPayload),
+            'external_campaign_id' => $this->stringValue($metaLead['campaign_id'] ?? null) ?: $this->extractExternalCampaignId($webhookPayload),
+            'external_campaign_name' => $this->stringValue($metaLead['campaign_name'] ?? null),
+            'external_ad_id' => $this->stringValue($metaLead['ad_id'] ?? null) ?: $this->extractExternalAdId($webhookPayload),
+            'source' => 'social',
+            'source_channel' => 'facebook',
+            'meta_fields' => [],
+        ];
+
+        $fieldData = $metaLead['field_data'] ?? [];
+
+        if (is_iterable($fieldData)) {
+            foreach ($fieldData as $field) {
+                if (! is_array($field)) {
+                    continue;
+                }
+
+                $name = trim((string) ($field['name'] ?? ''));
+                $value = $this->metaFieldValue($field['values'] ?? null);
+
+                if ($name === '' || $value === null || $value === '') {
+                    continue;
+                }
+
+                $normalizedLead['meta_fields'][$name] = $value;
+
+                $crmField = $this->metaFieldNameToCrmField($name);
+
+                if ($crmField && ! filled($normalizedLead[$crmField] ?? null)) {
+                    $normalizedLead[$crmField] = $value;
+                }
+            }
+        }
+
+        return array_filter($normalizedLead, fn ($value) => ! is_null($value) && $value !== '' && $value !== []);
+    }
+
+    private function metaFieldValue(mixed $values): ?string
+    {
+        if (is_array($values)) {
+            $items = array_values(array_filter(array_map(
+                fn ($value) => is_scalar($value) ? trim((string) $value) : null,
+                $values
+            ), fn ($value) => filled($value)));
+
+            return $items === [] ? null : implode(', ', $items);
+        }
+
+        return is_scalar($values) && trim((string) $values) !== ''
+            ? trim((string) $values)
+            : null;
+    }
+
+    private function metaFieldNameToCrmField(string $name): ?string
+    {
+        $key = (string) Str::of($name)
+            ->lower()
+            ->replace([' ', '-'], '_')
+            ->replaceMatches('/_+/', '_')
+            ->trim('_');
+
+        return match ($key) {
+            'full_name', 'fullname', 'name' => 'full_name',
+            'first_name', 'firstname' => 'first_name',
+            'last_name', 'lastname' => 'last_name',
+            'email', 'work_email' => 'email',
+            'phone', 'phone_number', 'mobile_phone', 'work_phone' => 'phone',
+            'company', 'company_name' => 'company',
+            'job_title' => 'job_title',
+            'website' => 'website',
+            'street', 'street_address' => 'street',
+            'zip', 'zip_code', 'postal_code' => 'zip',
+            'city' => 'city',
+            'country' => 'country',
+            default => null,
+        };
+    }
+
+    private function stringValue(mixed $value): ?string
+    {
+        return is_scalar($value) && trim((string) $value) !== ''
+            ? trim((string) $value)
+            : null;
     }
 
     private function applyFieldMap(array $normalizedLead, ?IntegrationFormMapping $mapping, array $payload): array

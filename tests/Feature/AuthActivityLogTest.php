@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AuthActivityLog;
+use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -90,6 +91,59 @@ class AuthActivityLogTest extends TestCase
             'email' => 'missing@example.com',
             'failure_reason' => 'user_not_found',
         ]);
+    }
+
+    public function test_successful_login_shows_open_assigned_leads_popup(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'editor',
+            'name' => 'Dana Cohen',
+            'email' => 'dana-login@example.com',
+            'password' => 'secret123',
+        ]);
+        $otherUser = User::factory()->create(['role' => 'editor']);
+
+        Lead::create([
+            'first_name' => 'Open',
+            'last_name' => 'One',
+            'email' => 'open-one@example.com',
+            'owner_id' => $user->id,
+            'status' => 'new',
+        ]);
+        Lead::create([
+            'first_name' => 'Open',
+            'last_name' => 'Two',
+            'email' => 'open-two@example.com',
+            'owner_id' => $user->id,
+            'status' => 'contacted',
+        ]);
+        Lead::create([
+            'first_name' => 'Closed',
+            'last_name' => 'Lead',
+            'email' => 'closed-lead@example.com',
+            'owner_id' => $user->id,
+            'status' => 'won',
+        ]);
+        Lead::create([
+            'first_name' => 'Other',
+            'last_name' => 'Owner',
+            'email' => 'other-owner@example.com',
+            'owner_id' => $otherUser->id,
+            'status' => 'new',
+        ]);
+
+        $this->followingRedirects()
+            ->post(route('login.submit'), [
+                'email' => 'dana-login@example.com',
+                'password' => 'secret123',
+            ])
+            ->assertOk()
+            ->assertSeeInOrder([
+                'שלום Dana Cohen',
+                'יש לך',
+                '2',
+                'לידים פתוחים שממתינים לטיפולך',
+            ]);
     }
 
     public function test_invalid_login_payload_is_logged_as_validation_error(): void

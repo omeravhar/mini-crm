@@ -14,8 +14,8 @@ use App\Http\Controllers\LeadStatusController;
 use App\Http\Controllers\NotificationController;
 
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
-    Route::get('/webhooks/meta/{integration:webhook_key}', [IntegrationWebhookController::class, 'metaVerify'])->name('webhooks.meta.verify');
-    Route::post('/webhooks/meta/{integration:webhook_key}', [IntegrationWebhookController::class, 'metaReceive'])->name('webhooks.meta.receive');
+    Route::get('/webhooks/meta/{integration}', [IntegrationWebhookController::class, 'metaVerify'])->name('webhooks.meta.verify');
+    Route::post('/webhooks/meta/{integration}', [IntegrationWebhookController::class, 'metaReceive'])->name('webhooks.meta.receive');
     Route::post('/webhooks/google/{integration:webhook_key}', [IntegrationWebhookController::class, 'googleReceive'])->name('webhooks.google.receive');
     Route::post('/webhooks/tiktok/{integration:webhook_key}', [IntegrationWebhookController::class, 'tiktokReceive'])->name('webhooks.tiktok.receive');
     Route::post('/webhooks/generic/{integration:webhook_key}', [IntegrationWebhookController::class, 'genericReceive'])->name('webhooks.generic.receive');
@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/integrations/test', [IntegrationController::class, 'testStorePayload'])->name('integrations.test');
         Route::put('/integrations/{integration}', [IntegrationController::class, 'update'])->name('integrations.update');
         Route::post('/integrations/{integration}/test', [IntegrationController::class, 'testUpdatePayload'])->name('integrations.test.saved');
+        Route::post('/integrations/{integration}/meta-sync', [IntegrationController::class, 'syncMeta'])->name('integrations.meta.sync');
         Route::delete('/integrations/{integration}', [IntegrationController::class, 'destroy'])->name('integrations.destroy');
         Route::post('/integrations/{integration}/mappings', [IntegrationController::class, 'storeMapping'])->name('integrations.mappings.store');
         Route::put('/integrations/mappings/{mapping}', [IntegrationController::class, 'updateMapping'])->name('integrations.mappings.update');

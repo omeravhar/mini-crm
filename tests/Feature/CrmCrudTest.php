@@ -731,8 +731,8 @@ class CrmCrudTest extends TestCase
             'email' => 'avi@example.com',
             'company' => 'Other Co',
             'interested_in' => 'Wardrobes',
-            'lead_type' => 'new',
-            'external_campaign_name' => 'Google May',
+            'lead_type' => 'returning',
+            'external_campaign_name' => 'Meta April',
             'received_at' => '2026-04-16 10:00:00',
             'owner_id' => $owner->id,
             'created_by' => $admin->id,
@@ -749,6 +749,8 @@ class CrmCrudTest extends TestCase
             ->get(route('admin.leads.index', [
                 'campaign' => 'Meta April',
                 'lead_type' => 'returning',
+                'entry_from' => '2026-04-15',
+                'entry_to' => '2026-04-15',
             ]))
             ->assertOk()
             ->assertSee('Shira Gold')
@@ -756,6 +758,83 @@ class CrmCrudTest extends TestCase
             ->assertSee('2026-04-15 11:30')
             ->assertSee('חוזר')
             ->assertDontSee('Avi Mizrahi');
+    }
+
+    public function test_my_leads_can_filter_by_entry_date(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+        $otherOwner = User::factory()->create(['role' => 'editor']);
+
+        Lead::create([
+            'first_name' => 'Local',
+            'last_name' => 'Date',
+            'email' => 'local-date@example.com',
+            'owner_id' => $owner->id,
+            'created_by' => $owner->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'received_at' => '2026-04-14 22:30:00',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Outside',
+            'last_name' => 'Date',
+            'email' => 'outside-date@example.com',
+            'owner_id' => $owner->id,
+            'created_by' => $owner->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'received_at' => '2026-04-15 21:30:00',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $manualLead = Lead::create([
+            'first_name' => 'Manual',
+            'last_name' => 'Fallback',
+            'email' => 'manual-fallback@example.com',
+            'owner_id' => $owner->id,
+            'created_by' => $owner->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        DB::table('leads')->where('id', $manualLead->id)->update([
+            'created_at' => Carbon::parse('2026-04-15 08:00:00'),
+            'updated_at' => Carbon::parse('2026-04-15 08:00:00'),
+        ]);
+
+        Lead::create([
+            'first_name' => 'Other',
+            'last_name' => 'Owner',
+            'email' => 'other-owner@example.com',
+            'owner_id' => $otherOwner->id,
+            'created_by' => $otherOwner->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'received_at' => '2026-04-15 08:00:00',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('leads.my', [
+                'entry_from' => '2026-04-15',
+                'entry_to' => '2026-04-15',
+            ]))
+            ->assertOk()
+            ->assertSee('Local Date')
+            ->assertSee('Manual Fallback')
+            ->assertDontSee('Outside Date')
+            ->assertDontSee('Other Owner');
     }
 
     public function test_closing_a_lead_sets_closed_at_timestamp(): void

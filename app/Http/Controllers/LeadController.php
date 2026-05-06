@@ -58,6 +58,8 @@ class LeadController extends Controller
         'private',
     ];
 
+    private const ENTRY_TIMEZONE = 'Asia/Jerusalem';
+
     public function create()
     {
         $this->requireAdmin();
@@ -512,6 +514,8 @@ class LeadController extends Controller
             'lead_type' => (string) $request->input('lead_type', ''),
             'owner_id' => $allowOwnerFilter ? (string) $request->input('owner_id', '') : '',
             'campaign' => trim((string) $request->input('campaign', '')),
+            'entry_from' => $this->dateFilterValue($request->input('entry_from')),
+            'entry_to' => $this->dateFilterValue($request->input('entry_to')),
             'follow_up_scope' => (string) $request->input('follow_up_scope', ''),
         ];
     }
@@ -579,6 +583,10 @@ class LeadController extends Controller
             });
         }
 
+        if ($filters['entry_from'] !== '' || $filters['entry_to'] !== '') {
+            $this->applyEntryDateFilter($query, $filters['entry_from'], $filters['entry_to']);
+        }
+
         $today = Carbon::now(config('app.timezone'))->toDateString();
 
         match ($filters['follow_up_scope']) {
@@ -588,6 +596,44 @@ class LeadController extends Controller
             'none' => $query->whereNull('follow_up'),
             default => null,
         };
+    }
+
+    private function dateFilterValue(mixed $value): string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        try {
+            $date = Carbon::createFromFormat('Y-m-d', $value, self::ENTRY_TIMEZONE);
+        } catch (\Throwable) {
+            return '';
+        }
+
+        return $date && $date->format('Y-m-d') === $value ? $value : '';
+    }
+
+    private function applyEntryDateFilter(Builder $query, string $from, string $to): void
+    {
+        if ($from !== '') {
+            $fromDate = Carbon::createFromFormat('Y-m-d', $from, self::ENTRY_TIMEZONE)
+                ->startOfDay()
+                ->timezone(config('app.timezone'))
+                ->toDateTimeString();
+
+            $query->whereRaw('COALESCE(received_at, created_at) >= ?', [$fromDate]);
+        }
+
+        if ($to !== '') {
+            $toDate = Carbon::createFromFormat('Y-m-d', $to, self::ENTRY_TIMEZONE)
+                ->endOfDay()
+                ->timezone(config('app.timezone'))
+                ->toDateTimeString();
+
+            $query->whereRaw('COALESCE(received_at, created_at) <= ?', [$toDate]);
+        }
     }
 
     private function syncClosedAtPayload(array &$data, ?Lead $lead = null): void

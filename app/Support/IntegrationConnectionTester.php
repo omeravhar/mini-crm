@@ -147,11 +147,23 @@ class IntegrationConnectionTester
             }
 
             $pageResponse = $api->get($pageId, [
-                'fields' => 'id,name',
+                'fields' => 'id,name,access_token',
                 'access_token' => $accessToken,
             ]);
 
             if ($pageResponse->successful()) {
+                $pageAccessToken = is_scalar($pageResponse->json('access_token'))
+                    && trim((string) $pageResponse->json('access_token')) !== ''
+                        ? trim((string) $pageResponse->json('access_token'))
+                        : null;
+                $this->check(
+                    $checks,
+                    'Page Access Token',
+                    $pageAccessToken ? 'success' : 'warning',
+                    $pageAccessToken
+                        ? 'Meta החזירה Page Access Token, ולכן בדיקת טפסי הלידים תרוץ עם token של הדף.'
+                        : 'Meta לא החזירה Page Access Token. אם בדיקת הטפסים תיכשל עם #190, הדבק Access Token של הדף או הרץ סנכרון Meta.'
+                );
                 $this->check(
                     $checks,
                     'גישה לעמוד',
@@ -172,7 +184,7 @@ class IntegrationConnectionTester
             $formsResponse = $api->get($pageId.'/leadgen_forms', [
                 'fields' => 'id,name,status',
                 'limit' => 100,
-                'access_token' => $accessToken,
+                'access_token' => $pageAccessToken ?: $accessToken,
             ]);
 
             if (! $formsResponse->successful()) {

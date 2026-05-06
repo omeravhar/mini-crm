@@ -79,6 +79,160 @@ class IntegrationManagementTest extends TestCase
             ->assertSeeText('challenge-token');
     }
 
+    public function test_invalid_meta_verify_attempt_is_logged(): void
+    {
+        $integration = Integration::create([
+            'name' => 'Meta Verify',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'meta-secret',
+        ]);
+
+        $this->get(route('webhooks.meta.verify', [
+            'integration' => $integration->webhook_key,
+            'hub_mode' => 'subscribe',
+            'hub_verify_token' => 'wrong-secret',
+            'hub_challenge' => 'challenge-token',
+        ]))
+            ->assertForbidden();
+
+        $event = WebhookEvent::firstOrFail();
+
+        $this->assertSame($integration->id, $event->integration_id);
+        $this->assertSame('meta', $event->platform);
+        $this->assertSame('webhook_verify', $event->event_type);
+        $this->assertSame('rejected', $event->status);
+        $this->assertSame('Meta verify rejected: verify token mismatch.', $event->error_message);
+        $this->assertSame('wrong-secret', data_get($event->payload, 'query.hub_verify_token'));
+    }
+
+    public function test_meta_webhook_with_unknown_key_is_logged_as_rejected(): void
+    {
+        $this->postJson('/webhooks/meta/not-a-real-key', [
+            'object' => 'page',
+            'entry' => [
+                [
+                    'changes' => [
+                        [
+                            'field' => 'leadgen',
+                            'value' => [
+                                'leadgen_id' => 'leadgen_123',
+                                'form_id' => 'form_123',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ])
+            ->assertNotFound();
+
+        $event = WebhookEvent::firstOrFail();
+
+        $this->assertNull($event->integration_id);
+        $this->assertSame('meta', $event->platform);
+        $this->assertSame('leadgen', $event->event_type);
+        $this->assertSame('rejected', $event->status);
+        $this->assertSame('Meta webhook rejected: invalid webhook key, platform, or inactive integration.', $event->error_message);
+        $this->assertSame('webhooks/meta/not-a-real-key', data_get($event->payload, 'path'));
+    }
+
+    public function test_meta_webhook_fetches_lead_details_and_processes_lead_immediately(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+        $integration = Integration::create([
+            'name' => 'Meta Leads',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-123',
+            'external_page_id' => '12039931243197',
+            'access_token' => 'stored-meta-token',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integration->id,
+            'external_form_id' => '416356547604942',
+            'external_form_name' => 'Meta Form',
+            'default_owner_id' => $owner->id,
+            'is_active' => true,
+            'field_map' => [
+                'interested_in' => 'meta_fields.project_type',
+            ],
+        ]);
+
+        Http::fake([
+            'https://graph.facebook.com/v23.0/leadgen_123*' => Http::response([
+                'id' => 'leadgen_123',
+                'created_time' => '2026-04-29T07:09:00+0000',
+                'form_id' => '416356547604942',
+                'campaign_id' => 'cmp_123',
+                'campaign_name' => 'April Meta Leads',
+                'ad_id' => 'ad_456',
+                'field_data' => [
+                    [
+                        'name' => 'full_name',
+                        'values' => ['Dana Levi'],
+                    ],
+                    [
+                        'name' => 'email',
+                        'values' => ['dana@example.com'],
+                    ],
+                    [
+                        'name' => 'phone_number',
+                        'values' => ['0501234567'],
+                    ],
+                    [
+                        'name' => 'project_type',
+                        'values' => ['Kitchen'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->postJson(route('webhooks.meta.receive', ['integration' => $integration->webhook_key]), [
+            'object' => 'page',
+            'entry' => [
+                [
+                    'id' => '12039931243197',
+                    'time' => 1777446540,
+                    'changes' => [
+                        [
+                            'field' => 'leadgen',
+                            'value' => [
+                                'leadgen_id' => 'leadgen_123',
+                                'form_id' => '416356547604942',
+                                'page_id' => '12039931243197',
+                                'ad_id' => 'ad_456',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ])
+            ->assertStatus(202)
+            ->assertJsonPath('status', 'accepted');
+
+        $event = WebhookEvent::firstOrFail();
+        $lead = Lead::firstOrFail();
+
+        $this->assertSame('meta', $event->platform);
+        $this->assertSame('leadgen', $event->event_type);
+        $this->assertSame('416356547604942', $event->external_form_id);
+        $this->assertSame('processed', $event->fresh()->status);
+        $this->assertSame('leadgen_123', $lead->external_lead_id);
+        $this->assertSame('Dana', $lead->first_name);
+        $this->assertSame('Levi', $lead->last_name);
+        $this->assertSame('dana@example.com', $lead->email);
+        $this->assertSame('0501234567', $lead->phone);
+        $this->assertSame('Kitchen', $lead->interested_in);
+        $this->assertSame('meta', $lead->source_platform);
+        $this->assertSame('facebook', $lead->source_channel);
+        $this->assertSame('cmp_123', $lead->external_campaign_id);
+        $this->assertSame('April Meta Leads', $lead->external_campaign_name);
+        $this->assertSame('ad_456', $lead->external_ad_id);
+        $this->assertSame($owner->id, $lead->owner_id);
+        $this->assertSame('leadgen_123', data_get($event->fresh()->payload, '_meta_fetched_lead.id'));
+    }
+
     public function test_generic_webhook_processes_lead_immediately(): void
     {
         $integration = Integration::create([
@@ -769,14 +923,15 @@ class IntegrationManagementTest extends TestCase
                 ]);
             }
 
-            if (str_contains($request->url(), '/12039931243197?fields=id%2Cname&access_token=stored-meta-token')) {
+            if (str_contains($request->url(), '/12039931243197?fields=id%2Cname%2Caccess_token&access_token=stored-meta-token')) {
                 return Http::response([
                     'id' => '12039931243197',
                     'name' => 'Ritzufim Page',
+                    'access_token' => 'page-token',
                 ]);
             }
 
-            if (str_contains($request->url(), '/12039931243197/leadgen_forms?fields=id%2Cname%2Cstatus&limit=100&access_token=stored-meta-token')) {
+            if (str_contains($request->url(), '/12039931243197/leadgen_forms?fields=id%2Cname%2Cstatus&limit=100&access_token=page-token')) {
                 return Http::response([
                     'data' => [
                         [
@@ -807,6 +962,139 @@ class IntegrationManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('ok', true);
+    }
+
+    public function test_admin_can_sync_meta_subscription_and_form_mappings(): void
+    {
+        config([
+            'services.meta.app_id' => '2527879594331333',
+            'services.meta.app_secret' => 'app-secret',
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        $integration = Integration::create([
+            'name' => 'Meta Leads',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-123',
+            'external_page_id' => '12039931243197',
+            'access_token' => 'stored-meta-token',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integration->id,
+            'external_form_id' => 'existing_form',
+            'is_active' => true,
+        ]);
+
+        Http::fake(function (HttpRequest $request) {
+            if ($request->method() === 'GET' && str_contains($request->url(), '/2527879594331333/subscriptions')) {
+                return Http::response([
+                    'data' => [],
+                ]);
+            }
+
+            if ($request->method() === 'POST' && str_contains($request->url(), '/2527879594331333/subscriptions')) {
+                return Http::response([
+                    'success' => true,
+                ]);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/me?fields=id%2Cname&access_token=stored-meta-token')) {
+                return Http::response([
+                    'id' => 'user_1',
+                    'name' => 'Meta Tester',
+                ]);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/me/accounts?')) {
+                return Http::response([
+                    'data' => [
+                        [
+                            'id' => '12039931243197',
+                            'name' => 'Ritzufim Page',
+                            'access_token' => 'page-token',
+                        ],
+                    ],
+                ]);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/12039931243197?fields=id%2Cname%2Caccess_token')) {
+                return Http::response([
+                    'id' => '12039931243197',
+                    'name' => 'Ritzufim Page',
+                    'access_token' => 'page-token',
+                ]);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/12039931243197/subscribed_apps')) {
+                return Http::response([
+                    'data' => [],
+                ]);
+            }
+
+            if ($request->method() === 'POST' && str_contains($request->url(), '/12039931243197/subscribed_apps')) {
+                return Http::response([
+                    'success' => true,
+                ]);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/12039931243197/leadgen_forms?')) {
+                return Http::response([
+                    'data' => [
+                        [
+                            'id' => 'existing_form',
+                            'name' => 'Existing Meta Form',
+                            'status' => 'ACTIVE',
+                        ],
+                        [
+                            'id' => 'new_form',
+                            'name' => 'New Meta Form',
+                            'status' => 'ACTIVE',
+                        ],
+                    ],
+                ]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.integrations.meta.sync', $integration))
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('ok', true)
+            ->assertJsonCount(2, 'forms');
+
+        $this->assertDatabaseHas('integration_form_mappings', [
+            'integration_id' => $integration->id,
+            'external_form_id' => 'existing_form',
+            'external_form_name' => 'Existing Meta Form',
+        ]);
+
+        $this->assertDatabaseHas('integration_form_mappings', [
+            'integration_id' => $integration->id,
+            'external_form_id' => 'new_form',
+            'external_form_name' => 'New Meta Form',
+            'is_active' => true,
+        ]);
+
+        Http::assertSent(function (HttpRequest $request) {
+            return $request->method() === 'POST'
+                && str_contains($request->url(), '/12039931243197/subscribed_apps')
+                && ($request->data()['subscribed_fields'] ?? null) === 'leadgen'
+                && ($request->data()['access_token'] ?? null) === 'page-token';
+        });
+
+        Http::assertSent(function (HttpRequest $request) use ($integration) {
+            return $request->method() === 'POST'
+                && str_contains($request->url(), '/2527879594331333/subscriptions')
+                && ($request->data()['object'] ?? null) === 'page'
+                && ($request->data()['fields'] ?? null) === 'leadgen'
+                && ($request->data()['callback_url'] ?? null) === route('webhooks.meta.receive', ['integration' => $integration->webhook_key])
+                && ($request->data()['verify_token'] ?? null) === 'verify-123'
+                && ($request->data()['access_token'] ?? null) === '2527879594331333|app-secret';
+        });
     }
 
     public function test_meta_connection_test_reports_missing_access_token(): void

@@ -1,0 +1,98 @@
+/*
+ * Global project stylesheet.
+ * Loaded by CRM layouts and standalone public pages.
+ * Put project-wide overrides and shared utility classes here.
+ */
+
+:root {
+    --crm-font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    --crm-page-bg: #f4f6fb;
+    --crm-text: #0f172a;
+    --crm-muted: #64748b;
+    --crm-primary: #0d6efd;
+    --crm-border: #dee2e6;
+    --crm-card-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100%;
+    font-family: var(--crm-font-family);
+    color: var(--crm-text);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    text-underline-offset: 0.18em;
+}
+
+img,
+svg {
+    max-width: 100%;
+}
+
+.card,
+.modal-content,
+.dropdown-menu,
+.offcanvas {
+    border-color: var(--crm-border);
+}
+
+.card {
+    box-shadow: var(--crm-card-shadow);
+}
+
+.text-muted,
+.form-text {
+    color: var(--crm-muted) !important;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--crm-primary);
+    --bs-btn-border-color: var(--crm-primary);
+    --bs-btn-hover-bg: #0b5ed7;
+    --bs-btn-hover-border-color: #0a58ca;
+}
+
+.table {
+    vertical-align: middle;
+}
+
+.table > :not(caption) > * > * {
+    padding-block: 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: rgba(13, 110, 253, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.16);
+}
+
+.global-page-shell {
+    width: min(100%, 1320px);
+    margin-inline: auto;
+}
+
+.global-muted {
+    color: var(--crm-muted) !important;
+}
+
+.global-cardless {
+    box-shadow: none !important;
+    border: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+    body {
+        overflow-wrap: anywhere;
+    }
+
+    .table-responsive {
+        border-radius: 0.5rem;
+    }
+}

@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'EeasyCRM'),
 
+    'slogan' => env('APP_SLOGAN', 'Exactly What You Need'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

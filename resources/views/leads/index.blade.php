@@ -29,12 +29,20 @@
 @section('content')
     <form method="GET" action="{{ route('admin.leads.index') }}" class="card shadow-sm border-0 mb-4 admin-leads-filter" data-admin-leads-filter>
         <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-xl-3">
+            <div class="row g-3 align-items-end admin-leads-filter__grid">
+                <div class="col-sm-12 col-lg-4 col-xl-auto admin-leads-filter__search">
                     <label class="form-label" for="q">חיפוש</label>
                     <input class="form-control" id="q" name="q" value="{{ $filters['q'] }}" placeholder="שם, דוא&quot;ל, חברה, טלפון, התעניינות או קמפיין">
                 </div>
-                <div class="col-sm-6 col-xl">
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__date">
+                    <label class="form-label" for="entry_from">מתאריך</label>
+                    <input class="form-control" id="entry_from" name="entry_from" type="date" value="{{ $filters['entry_from'] }}">
+                </div>
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__date">
+                    <label class="form-label" for="entry_to">עד תאריך</label>
+                    <input class="form-control" id="entry_to" name="entry_to" type="date" value="{{ $filters['entry_to'] }}">
+                </div>
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__select">
                     <label class="form-label" for="status">סטטוס</label>
                     <select class="form-select" id="status" name="status">
                         <option value="">כל הסטטוסים</option>
@@ -43,7 +51,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-sm-6 col-xl">
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__select">
                     <label class="form-label" for="priority">עדיפות</label>
                     <select class="form-select" id="priority" name="priority">
                         <option value="">כל העדיפויות</option>
@@ -52,7 +60,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-sm-6 col-xl">
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__select">
                     <label class="form-label" for="lead_type">סוג ליד</label>
                     <select class="form-select" id="lead_type" name="lead_type">
                         <option value="">כל סוגי הלידים</option>
@@ -61,7 +69,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-sm-6 col-xl">
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__select">
                     <label class="form-label" for="owner_id">אחראי</label>
                     <select class="form-select" id="owner_id" name="owner_id">
                         <option value="">כל האחראים</option>
@@ -71,7 +79,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-sm-6 col-xl">
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__select">
                     <label class="form-label" for="campaign">קמפיין</label>
                     <select class="form-select" id="campaign" name="campaign">
                         <option value="">כל הקמפיינים</option>
@@ -80,7 +88,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-sm-6 col-xl">
+                <div class="col-sm-6 col-xl-auto admin-leads-filter__select">
                     <label class="form-label" for="follow_up_scope">מעקב</label>
                     <select class="form-select" id="follow_up_scope" name="follow_up_scope">
                         <option value="">כל המעקבים</option>
@@ -89,7 +97,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-sm-6 col-xl-auto d-grid gap-2">
+                <div class="col-sm-6 col-xl-auto d-grid gap-2 admin-leads-filter__actions">
                     <button class="btn btn-dark" type="submit">סינון</button>
                     <a class="btn btn-outline-secondary" href="{{ route('admin.leads.index') }}">ניקוי</a>
                 </div>
