@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('pageTitle', config('app.name', 'EeasyCRM'))</title>
+    <title>@yield('pageTitle', config('app.name', 'EasyCRM'))</title>
+    <link rel="icon" href="{{ asset('assets/img/easycrm-mark.svg') }}" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -24,7 +25,7 @@
         }
         .app-brand {
             display: inline-flex;
-            align-items: baseline;
+            align-items: center;
             gap: 0.55rem;
             min-width: 0;
             color: inherit;
@@ -34,6 +35,16 @@
         .navbar-brand.app-brand {
             margin-inline-end: 0;
             max-width: min(58vw, 28rem);
+        }
+        .app-brand__logo {
+            flex: 0 0 auto;
+            width: 2.35rem;
+            height: 2.35rem;
+            object-fit: contain;
+        }
+        .offcanvas-title.app-brand .app-brand__logo {
+            width: 2.15rem;
+            height: 2.15rem;
         }
         .app-brand__name {
             flex: 0 0 auto;
@@ -337,8 +348,9 @@
 </head>
 <body>
     @php
-        $appName = config('app.name', 'EeasyCRM');
+        $appName = config('app.name', 'EasyCRM');
         $appSlogan = config('app.slogan', 'Exactly What You Need');
+        $appLogoMark = asset('assets/img/easycrm-mark.svg');
         $roleLabels = [
             'admin' => 'מנהל',
             'editor' => 'עורך',
@@ -358,6 +370,7 @@
                     <i class="bi bi-list fs-5"></i>
                 </button>
                 <a class="navbar-brand app-brand fw-semibold mb-0" href="{{ route('dashboard') }}">
+                    <img class="app-brand__logo" src="{{ $appLogoMark }}" alt="" aria-hidden="true">
                     <span class="app-brand__name">{{ $appName }}</span>
                     <span class="app-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
                 </a>
@@ -378,6 +391,7 @@
     <div class="offcanvas offcanvas-start mobile-sidebar d-lg-none" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
         <div class="offcanvas-header border-bottom">
             <h5 class="offcanvas-title app-brand app-brand--dark" id="mobileSidebarLabel">
+                <img class="app-brand__logo" src="{{ $appLogoMark }}" alt="" aria-hidden="true">
                 <span class="app-brand__name">{{ $appName }}</span>
                 <span class="app-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
             </h5>
@@ -397,14 +411,17 @@
             </aside>
 
             <main class="col-12 col-lg-10 p-3 p-lg-4">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-                    <div>
-                        <h1 class="h3 mb-1">@yield('pageTitle', $appName)</h1>
-                        <div class="text-muted">@yield('pageSubtitle')</div>
+                <div class="page-header-shell @yield('pageHeaderClass')" data-page-header-shell>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 page-header-bar">
+                        <div>
+                            <h1 class="h3 mb-1">@yield('pageTitle', $appName)</h1>
+                            <div class="text-muted">@yield('pageSubtitle')</div>
+                        </div>
+                        <div class="page-actions d-grid d-sm-flex gap-2">
+                            @yield('pageActions')
+                        </div>
                     </div>
-                    <div class="page-actions d-grid d-sm-flex gap-2">
-                        @yield('pageActions')
-                    </div>
+                    @yield('pageHeaderExtras')
                 </div>
 
                 @include('partials.alerts')

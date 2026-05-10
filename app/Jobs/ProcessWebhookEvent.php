@@ -88,6 +88,7 @@ class ProcessWebhookEvent implements ShouldQueue
             $ownerId = $this->resolveOwnerId($normalizedLead, $mapping);
             $interestedIn = $this->resolveInterestedIn($normalizedLead);
             $campaignName = $this->resolveCampaignName($normalizedLead, $payload);
+            $formNameAsCampaignFallback = $this->stringValue($mapping?->external_form_name);
 
             $lead = $this->findExistingLead($event->platform, $externalLeadId, $email, $phone) ?? new Lead();
             $previousOwnerId = $lead->owner_id;
@@ -130,7 +131,7 @@ class ProcessWebhookEvent implements ShouldQueue
                 'external_lead_id' => $externalLeadId,
                 'external_form_id' => $externalFormId,
                 'external_campaign_id' => $normalizedLead['external_campaign_id'] ?? $this->extractExternalCampaignId($payload),
-                'external_campaign_name' => $campaignName ?? $lead->external_campaign_name,
+                'external_campaign_name' => $campaignName ?? $lead->external_campaign_name ?? $formNameAsCampaignFallback,
                 'external_ad_id' => $normalizedLead['external_ad_id'] ?? $this->extractExternalAdId($payload),
                 'raw_payload' => $payload,
                 'received_at' => $lead->received_at ?? $event->received_at ?? now(),
@@ -480,23 +481,24 @@ class ProcessWebhookEvent implements ShouldQueue
     {
         $key = (string) Str::of($name)
             ->lower()
-            ->replace([' ', '-'], '_')
+            ->replace(['"', "'", '״', '׳', '`'], '')
+            ->replace([' ', '-', '.', '/', '\\'], '_')
             ->replaceMatches('/_+/', '_')
             ->trim('_');
 
         return match ($key) {
-            'full_name', 'fullname', 'name' => 'full_name',
-            'first_name', 'firstname' => 'first_name',
-            'last_name', 'lastname' => 'last_name',
-            'email', 'work_email' => 'email',
-            'phone', 'phone_number', 'mobile_phone', 'work_phone' => 'phone',
-            'company', 'company_name' => 'company',
-            'job_title' => 'job_title',
-            'website' => 'website',
+            'full_name', 'fullname', 'name', 'שם', 'שם_מלא', 'שם_לקוח', 'שם_הלקוח' => 'full_name',
+            'first_name', 'firstname', 'שם_פרטי' => 'first_name',
+            'last_name', 'lastname', 'שם_משפחה' => 'last_name',
+            'email', 'work_email', 'דואל', 'אימייל', 'מייל', 'כתובת_דואל', 'כתובת_אימייל', 'כתובת_מייל' => 'email',
+            'phone', 'phone_number', 'mobile_phone', 'work_phone', 'טלפון', 'מספר_טלפון', 'נייד', 'טלפון_נייד', 'מספר_נייד', 'פלאפון' => 'phone',
+            'company', 'company_name', 'חברה', 'שם_חברה', 'שם_החברה' => 'company',
+            'job_title', 'תפקיד' => 'job_title',
+            'website', 'אתר', 'אתר_אינטרנט' => 'website',
             'street', 'street_address' => 'street',
             'zip', 'zip_code', 'postal_code' => 'zip',
-            'city' => 'city',
-            'country' => 'country',
+            'city', 'עיר' => 'city',
+            'country', 'מדינה' => 'country',
             default => null,
         };
     }

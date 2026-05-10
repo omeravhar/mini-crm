@@ -350,11 +350,11 @@ class IntegrationConnectionTester
 
         $this->check(
             $checks,
-            'Webhook Key',
+            'Google Webhook Key',
             $webhookKey !== '' ? 'success' : 'error',
             $webhookKey !== ''
-                ? 'יש Webhook Key שמור. השרת ישווה אותו לשדה google_key ש-Google שולחת בכל ליד.'
-                : 'חסר Webhook Key. לפי Google Ads צריך להזין גם Webhook URL וגם Webhook Key כדי לאמת את המשלוחים.'
+                ? 'A Google Webhook Key is saved. The server compares it with the google_key value Google sends on every lead.'
+                : 'Missing Google Webhook Key. In Google Ads, enter both the Webhook URL and the same Webhook Key value saved here.'
         );
 
         if ($integration) {
@@ -373,7 +373,7 @@ class IntegrationConnectionTester
             $checks,
             'בדיקה מול Google Ads',
             'info',
-            'כרגע הבדיקה מאמתת את שלמות ההגדרות המקומיות עבור Google Ads Lead Forms. אחרי השמירה הדבק את ה-Callback URL במסך ה-Webhook ואת ה-Webhook Secret בשדה Webhook Key ב-Google Ads.'
+            'This check validates the local Google Ads Lead Forms settings. In Google Ads, paste the Callback URL into Webhook URL and paste the saved Google Webhook Key / Webhook Secret into Webhook Key.'
         );
 
         return $this->result('google', $checks);

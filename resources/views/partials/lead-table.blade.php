@@ -1,6 +1,14 @@
 @php
     $showOwnerForm = $showOwnerForm ?? false;
     $users = $users ?? collect();
+    $hiddenColumns = $hiddenColumns ?? [];
+    $showCompanyColumn = ! in_array('company', $hiddenColumns, true);
+    $showInterestedInColumn = ! in_array('interested_in', $hiddenColumns, true);
+    $showCustomerColumn = ! in_array('customer', $hiddenColumns, true);
+    $desktopColumnCount = 11
+        + ($showCompanyColumn ? 1 : 0)
+        + ($showInterestedInColumn ? 1 : 0)
+        + ($showCustomerColumn ? 1 : 0);
     $statusLabels = $statusLabels ?? \App\Models\LeadStatus::labels();
     $statusSelectClasses = [
         'new' => 'lead-status-select--new',
@@ -27,17 +35,23 @@
             <tr>
                 <th>#</th>
                 <th>שם</th>
-                <th>חברה</th>
+                @if ($showCompanyColumn)
+                    <th>חברה</th>
+                @endif
                 <th>דוא"ל</th>
                 <th>תאריך כניסה</th>
-                <th>במה התעניין</th>
+                @if ($showInterestedInColumn)
+                    <th>במה התעניין</th>
+                @endif
                 <th>קמפיין</th>
                 <th>סוג ליד</th>
                 <th>אחראי</th>
                 <th>סטטוס</th>
                 <th>עדיפות</th>
                 <th>מעקב</th>
-                <th>לקוח</th>
+                @if ($showCustomerColumn)
+                    <th>לקוח</th>
+                @endif
                 <th class="text-end">פעולות</th>
             </tr>
         </thead>
@@ -49,10 +63,14 @@
                         <div class="fw-semibold">{{ $lead->full_name }}</div>
                         <div class="text-muted small">{{ $lead->phone ?: 'ללא טלפון' }}</div>
                     </td>
-                    <td>{{ $lead->company ?: 'ללא חברה' }}</td>
+                    @if ($showCompanyColumn)
+                        <td>{{ $lead->company ?: 'ללא חברה' }}</td>
+                    @endif
                     <td>{{ $lead->email ?: 'ללא דוא"ל' }}</td>
                     <td>{{ $lead->formatted_entry_at ?: 'לא זמין' }}</td>
-                    <td>{{ $lead->interested_in ?: 'לא צוין' }}</td>
+                    @if ($showInterestedInColumn)
+                        <td>{{ $lead->interested_in ?: 'לא צוין' }}</td>
+                    @endif
                     <td>{{ $lead->campaign_display ?: 'ללא קמפיין' }}</td>
                     <td><span class="badge {{ $leadTypeBadgeClasses[$lead->lead_type] ?? 'text-bg-secondary' }}">{{ $lead->lead_type_label }}</span></td>
                     <td class="lead-owner-cell">
@@ -104,13 +122,15 @@
                         </form>
                     </td>
                     <td>{{ $lead->formatted_follow_up ?: 'לא נקבע' }}</td>
-                    <td>
-                        @if ($lead->customer)
-                            <span class="badge text-bg-success">הומר ללקוח</span>
-                        @else
-                            <span class="badge text-bg-light border">עדיין לא</span>
-                        @endif
-                    </td>
+                    @if ($showCustomerColumn)
+                        <td>
+                            @if ($lead->customer)
+                                <span class="badge text-bg-success">הומר ללקוח</span>
+                            @else
+                                <span class="badge text-bg-light border">עדיין לא</span>
+                            @endif
+                        </td>
+                    @endif
                     <td class="text-end lead-actions-cell">
                         <div class="d-inline-flex lead-actions-group">
                             <a class="btn btn-sm btn-outline-primary" href="{{ route('leads.edit', $lead) }}">עריכה</a>
@@ -130,7 +150,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="14" class="text-center text-muted py-4">לא נמצאו לידים.</td>
+                    <td colspan="{{ $desktopColumnCount }}" class="text-center text-muted py-4">לא נמצאו לידים.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -144,7 +164,9 @@
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
                         <div class="fw-semibold">{{ $lead->full_name }}</div>
-                        <div class="mobile-record-meta">{{ $lead->company ?: 'ללא חברה' }}</div>
+                        @if ($showCompanyColumn)
+                            <div class="mobile-record-meta">{{ $lead->company ?: 'ללא חברה' }}</div>
+                        @endif
                     </div>
                     <div class="text-start">
                         <div class="small text-muted">#{{ $lead->id }}</div>
@@ -183,10 +205,12 @@
                             </select>
                         </form>
                     </div>
-                    @if ($lead->customer)
-                        <span class="badge text-bg-success">הומר ללקוח</span>
-                    @else
-                        <span class="badge text-bg-light border">עדיין לא לקוח</span>
+                    @if ($showCustomerColumn)
+                        @if ($lead->customer)
+                            <span class="badge text-bg-success">הומר ללקוח</span>
+                        @else
+                            <span class="badge text-bg-light border">עדיין לא לקוח</span>
+                        @endif
                     @endif
                 </div>
 
@@ -199,10 +223,12 @@
                         <div class="small text-muted mb-1">תאריך כניסה</div>
                         <div>{{ $lead->formatted_entry_at ?: 'לא זמין' }}</div>
                     </div>
-                    <div class="col-sm-6">
-                        <div class="small text-muted mb-1">במה התעניין</div>
-                        <div>{{ $lead->interested_in ?: 'לא צוין' }}</div>
-                    </div>
+                    @if ($showInterestedInColumn)
+                        <div class="col-sm-6">
+                            <div class="small text-muted mb-1">במה התעניין</div>
+                            <div>{{ $lead->interested_in ?: 'לא צוין' }}</div>
+                        </div>
+                    @endif
                     <div class="col-sm-6">
                         <div class="small text-muted mb-1">קמפיין</div>
                         <div>{{ $lead->campaign_display ?: 'ללא קמפיין' }}</div>

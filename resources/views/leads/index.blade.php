@@ -21,12 +21,13 @@
 
 @section('pageTitle', 'כל הלידים')
 @section('pageSubtitle', 'ניהול, שיוך, המרה ועדכון של כל הלידים במערכת')
+@section('pageHeaderClass', 'all-leads-page-header')
 
 @section('pageActions')
     <a class="btn btn-primary" href="{{ route('admin.leads.create') }}">יצירת ליד</a>
 @endsection
 
-@section('content')
+@section('pageHeaderExtras')
     <form method="GET" action="{{ route('admin.leads.index') }}" class="card shadow-sm border-0 mb-4 admin-leads-filter" data-admin-leads-filter>
         <div class="card-body">
             <div class="row g-3 align-items-end admin-leads-filter__grid">
@@ -104,9 +105,97 @@
             </div>
         </div>
     </form>
+@endsection
 
-    <div id="adminLeadsContent">
-        @include('leads.partials.admin-content', ['leads' => $leads, 'users' => $users])
+@section('content')
+    <style>
+        .all-leads-page-header {
+            background: #f4f6fb;
+            margin-bottom: 1rem;
+        }
+
+        .all-leads-page .card-stat {
+            padding: 0;
+        }
+
+        .all-leads-page .card-stat .card-body {
+            min-height: 148px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 1.35rem 1.5rem;
+        }
+
+        .all-leads-page .admin-leads-panel {
+            padding: 0;
+            overflow: visible;
+        }
+
+        .all-leads-page .admin-leads-panel .card-header {
+            padding: 1.15rem 1.5rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .all-leads-page .admin-leads-panel .card-body {
+            padding: 1rem;
+            overflow: visible;
+        }
+
+        .all-leads-page .admin-leads-panel .lead-table-responsive {
+            margin: 0;
+        }
+
+        .all-leads-page .admin-leads-panel .lead-management-table {
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .all-leads-page .admin-leads-panel .lead-management-table thead th {
+            background-clip: padding-box;
+            box-shadow: inset 0 -1px 0 #e2e8f0;
+        }
+
+        @media (min-width: 992px) {
+            .all-leads-page-header {
+                position: sticky;
+                top: 0;
+                z-index: 6;
+            }
+
+            .all-leads-page-header .admin-leads-filter {
+                position: static;
+                top: auto;
+                z-index: auto;
+            }
+
+            .all-leads-page .admin-leads-panel .card-body {
+                padding: 0;
+            }
+
+            .all-leads-page #adminLeadsContent .lead-table-responsive {
+                overflow: visible;
+            }
+
+            .all-leads-page #adminLeadsContent .lead-management-table thead {
+                position: static;
+            }
+
+            .all-leads-page #adminLeadsContent .lead-management-table thead th {
+                position: sticky;
+                top: var(--admin-leads-filter-offset, 0px);
+                z-index: 4;
+                background: #fff;
+                box-shadow: inset 0 -1px 0 #e2e8f0, 0 2px 8px rgba(15, 23, 42, 0.08);
+            }
+        }
+    </style>
+
+    <div class="all-leads-page">
+        <div id="adminLeadsContent">
+            @include('leads.partials.admin-content', ['leads' => $leads, 'users' => $users])
+        </div>
     </div>
 @endsection
 
@@ -114,7 +203,7 @@
     <script>
         (() => {
             const container = document.getElementById('adminLeadsContent');
-            const filter = document.querySelector('[data-admin-leads-filter]');
+            const pageHeader = document.querySelector('[data-page-header-shell].all-leads-page-header');
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
             const pollIntervalMs = 4000;
             let refreshPromise = null;
@@ -124,15 +213,12 @@
             }
 
             const updateStickyOffsets = () => {
-                if (!filter) {
-                    return;
-                }
+                const isDesktop = window.matchMedia('(min-width: 992px)').matches;
+                const pageHeaderHeight = isDesktop && pageHeader
+                    ? Math.ceil(pageHeader.getBoundingClientRect().height)
+                    : 0;
 
-                const offset = window.matchMedia('(min-width: 992px)').matches
-                    ? `${Math.ceil(filter.getBoundingClientRect().height)}px`
-                    : '0px';
-
-                document.documentElement.style.setProperty('--admin-leads-filter-offset', offset);
+                document.documentElement.style.setProperty('--admin-leads-filter-offset', `${pageHeaderHeight}px`);
             };
 
             updateStickyOffsets();

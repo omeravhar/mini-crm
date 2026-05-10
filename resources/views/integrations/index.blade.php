@@ -24,7 +24,7 @@
         'verify_url' => 'ב-Meta זו כתובת האימות הראשונית של ה-webhook. משתמשים בה יחד עם ה-Verify Token בזמן החיבור.',
         'access_token' => 'אסימון גישה של הפלטפורמה. ב-Meta אפשר להוציא דרך <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Graph API Explorer</a> או OAuth של האפליקציה. בלי Access Token המערכת לא תוכל למשוך פרטי ליד מלאים מ-Meta.',
         'refresh_token' => 'אסימון לחידוש Access Token אם הפלטפורמה מספקת אותו. כרגע המערכת שומרת אותו אבל לא מרעננת אוטומטית.',
-        'webhook_secret' => 'סוד לאימות webhook. ב-Google Ads Lead Forms זהו ה-Webhook Key: Google שולחת אותו כ-google_key והשרת בודק שהוא תואם לערך השמור.',
+        'webhook_secret' => 'For Google Ads Lead Forms, this is the exact Webhook Key you paste in Google Ads, for example crm123. Google sends it as google_key and the CRM checks that it matches.',
         'config_json' => 'שדה מתקדם להגדרות נוספות שלא קיבלו שדה נפרד, למשל שם עמוד, מזהים מיוחדים או הערות טכניות.',
         'notes' => 'הערות פנימיות לצוות: מי יצר את החיבור, מאיפה הגיע ה-token, ומה עוד צריך לזכור.',
         'edit_sensitive' => 'במסך עריכה אפשר להשאיר שדות סודיים ריקים כדי לשמור את הערך שכבר קיים במערכת.',
@@ -134,7 +134,7 @@
                                 {{ $renderFieldHelp('refresh_token') }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="integration_webhook_secret">Webhook Secret</label>
+                                <label class="form-label" for="integration_webhook_secret">Google Webhook Key / Webhook Secret</label>
                                 <input class="form-control" id="integration_webhook_secret" name="webhook_secret" value="{{ old('webhook_secret') }}">
                                 {{ $renderFieldHelp('webhook_secret') }}
                             </div>
@@ -220,9 +220,9 @@
                             </div>
                         @elseif ($integration->platform === 'google')
                             <div class="alert alert-light border mb-3 small">
-                                ב-Google Ads Lead Forms מזינים את <span class="font-monospace">Callback URL</span> בשדה Webhook URL
-                                ואת הערך של <span class="font-monospace">Webhook Secret</span> בשדה Webhook Key.
-                                הלידים יגיעו בפורמט Google Lead Form Webhook והשרת יאמת את <span class="font-monospace">google_key</span>.
+                                Google Ads Lead Forms: paste <span class="font-monospace">Callback URL</span> into Webhook URL.
+                                Paste the same value saved here as <span class="font-monospace">Google Webhook Key / Webhook Secret</span> into Google Ads Webhook Key.
+                                Google sends that value as <span class="font-monospace">google_key</span>.
                             </div>
                         @endif
                         <form method="POST" action="{{ route('admin.integrations.update', $integration) }}" data-integration-config-form data-test-url="{{ route('admin.integrations.test.saved', $integration) }}">
@@ -288,7 +288,7 @@
                                     <textarea class="form-control" name="refresh_token" rows="2" placeholder="השאר ריק כדי לשמור את הערך הקיים"></textarea>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Webhook Secret</label>
+                                    <label class="form-label">Google Webhook Key / Webhook Secret</label>
                                     {{ $renderFieldHelp('webhook_secret') }}
                                     <input class="form-control" name="webhook_secret" placeholder="השאר ריק כדי לשמור את הערך הקיים">
                                 </div>
@@ -305,7 +305,7 @@
                             </div>
                             <div class="mt-3 d-flex justify-content-between flex-wrap gap-2">
                                 <div class="small text-muted">
-                                    Webhook Key: <span class="font-monospace">{{ $integration->webhook_key }}</span>
+                                    URL Key: <span class="font-monospace">{{ $integration->webhook_key }}</span>
                                     @if ($integration->last_webhook_at)
                                         <span class="ms-2">עודכן לאחרונה: {{ $integration->last_webhook_at->format('Y-m-d H:i') }}</span>
                                     @endif

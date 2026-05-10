@@ -39,7 +39,7 @@
 @endphp
 
 @section('pageTitle', $isEditing ? 'עריכת ליד' : 'יצירת ליד')
-@section('pageSubtitle', $isEditing ? 'עדכון פרטי הליד בבסיס הנתונים' : 'הוספת ליד חדש ל-EeasyCRM')
+@section('pageSubtitle', $isEditing ? 'עדכון פרטי הליד בבסיס הנתונים' : 'הוספת ליד חדש ל-EasyCRM')
 
 @section('content')
     <form method="POST" action="{{ $isEditing ? route('leads.update', $lead) : route('admin.saveNewLead') }}" enctype="multipart/form-data">

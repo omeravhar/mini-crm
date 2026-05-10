@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-labelledby="title desc">
+  <title id="title">EasyCRM logo</title>
+  <desc id="desc">EasyCRM logo with a CRM dashboard icon and wordmark.</desc>
+  <defs>
+    <linearGradient id="shell" x1="36" y1="31" x2="171" y2="174" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d5fd1"/>
+      <stop offset="0.52" stop-color="#2ca8f5"/>
+      <stop offset="1" stop-color="#1955c8"/>
+    </linearGradient>
+    <linearGradient id="bars" x1="84" y1="143" x2="143" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d63d3"/>
+      <stop offset="0.5" stop-color="#20c7b4"/>
+      <stop offset="1" stop-color="#8be04c"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="145%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#0b2a66" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <g filter="url(#softShadow)">
+    <path d="M36 25h119c13 0 23 10 23 23v76c0 12-7 22-18 27l-56 23a28 28 0 0 1-22 0l-56-23C15 146 8 136 8 124V48c0-13 15-23 28-23Z" fill="url(#shell)"/>
+    <path d="M36 36h119c7 0 13 6 13 13v14H19V49c0-7 10-13 17-13Z" fill="#2a86e8"/>
+    <circle cx="44" cy="49" r="7" fill="#a9e64f"/>
+    <circle cx="65" cy="49" r="7" fill="#b9ee4e"/>
+    <circle cx="86" cy="49" r="7" fill="#72b8ef"/>
+    <path d="M19 68h149v56c0 8-5 14-12 17l-56 23a16 16 0 0 1-13 0l-56-23c-7-3-12-9-12-17V68Z" fill="#fff"/>
+    <circle cx="83" cy="91" r="20" fill="#1c67cf"/>
+    <path d="M42 142c5-28 21-42 46-42 15 0 27 6 35 18l-16 9c-5-6-11-9-19-9-14 0-23 7-28 24H42Z" fill="#1c67cf"/>
+    <path d="M80 136h15v28l-15 6v-34Zm25-20h15v38l-15 6v-44Zm25-21h15v50l-15 6V95Z" fill="url(#bars)"/>
+    <path d="M146 75l5 9 10 1-8 7 3 10-10-5-9 5 2-10-8-7 11-1 4-9Z" fill="#ffc443"/>
+  </g>
+  <text x="225" y="130" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="82" font-weight="800" letter-spacing="-1" fill="#071f5c">EasyCRM</text>
+</svg>

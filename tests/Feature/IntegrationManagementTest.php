@@ -233,6 +233,81 @@ class IntegrationManagementTest extends TestCase
         $this->assertSame('leadgen_123', data_get($event->fresh()->payload, '_meta_fetched_lead.id'));
     }
 
+    public function test_meta_webhook_maps_hebrew_field_labels_to_crm_fields(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+        $integration = Integration::create([
+            'name' => 'Meta Leads',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-123',
+            'external_page_id' => '121039931243197',
+            'access_token' => 'stored-meta-token',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integration->id,
+            'external_form_id' => '2146375775904263',
+            'external_form_name' => 'Hebrew Meta Form',
+            'default_owner_id' => $owner->id,
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://graph.facebook.com/v23.0/978263928320445*' => Http::response([
+                'id' => '978263928320445',
+                'created_time' => '2026-05-07T07:30:59+0000',
+                'form_id' => '2146375775904263',
+                'field_data' => [
+                    [
+                        'name' => 'שם_מלא',
+                        'values' => ['Guy Lerman'],
+                    ],
+                    [
+                        'name' => 'phone_number',
+                        'values' => ['+972507105611'],
+                    ],
+                    [
+                        'name' => 'דוא"ל',
+                        'values' => ['guylerman100@gmail.com'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->postJson(route('webhooks.meta.receive', ['integration' => $integration->webhook_key]), [
+            'object' => 'page',
+            'entry' => [
+                [
+                    'id' => '121039931243197',
+                    'time' => 1778139061,
+                    'changes' => [
+                        [
+                            'field' => 'leadgen',
+                            'value' => [
+                                'created_time' => 1778139059,
+                                'leadgen_id' => '978263928320445',
+                                'page_id' => '121039931243197',
+                                'form_id' => '2146375775904263',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ])
+            ->assertStatus(202)
+            ->assertJsonPath('status', 'accepted');
+
+        $lead = Lead::firstOrFail();
+
+        $this->assertSame('Guy', $lead->first_name);
+        $this->assertSame('Lerman', $lead->last_name);
+        $this->assertSame('guylerman100@gmail.com', $lead->email);
+        $this->assertSame('+972507105611', $lead->phone);
+        $this->assertSame('Hebrew Meta Form', $lead->external_campaign_name);
+        $this->assertSame($owner->id, $lead->owner_id);
+    }
+
     public function test_generic_webhook_processes_lead_immediately(): void
     {
         $integration = Integration::create([
@@ -503,7 +578,14 @@ class IntegrationManagementTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('message', 'Invalid google_key.');
 
-        $this->assertDatabaseCount('webhook_events', 0);
+        $event = WebhookEvent::firstOrFail();
+        $integration->refresh();
+
+        $this->assertSame('google', $event->platform);
+        $this->assertSame('rejected', $event->status);
+        $this->assertSame('Google webhook rejected: invalid google_key. Make sure the Google Ads Webhook Key matches this integration Webhook Secret.', $event->error_message);
+        $this->assertSame('wrong-key', data_get($event->payload, 'body.google_key'));
+        $this->assertSame($event->error_message, $integration->last_error_message);
     }
 
     public function test_processing_webhook_event_creates_or_updates_lead(): void

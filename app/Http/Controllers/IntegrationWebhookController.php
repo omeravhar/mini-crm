@@ -56,6 +56,14 @@ class IntegrationWebhookController extends Controller
         abort_unless($integration->platform === 'google' && $integration->status === 'active', 404);
 
         if (! $this->googleKeyMatches($integration, $request)) {
+            $message = 'Google webhook rejected: invalid google_key. Make sure the Google Ads Webhook Key matches this integration Webhook Secret.';
+
+            $this->logRejectedWebhook($request, 'google', $integration, $message);
+            $integration->forceFill([
+                'last_error_at' => now(),
+                'last_error_message' => $message,
+            ])->save();
+
             return response()->json([
                 'message' => 'Invalid google_key.',
             ], Response::HTTP_FORBIDDEN);

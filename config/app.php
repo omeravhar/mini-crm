@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'EeasyCRM'),
+    'name' => env('APP_NAME', 'EasyCRM'),
 
     'slogan' => env('APP_SLOGAN', 'Exactly What You Need'),
 

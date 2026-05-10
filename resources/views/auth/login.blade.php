@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>כניסה ל-{{ config('app.name', 'EeasyCRM') }}</title>
+    <title>כניסה ל-{{ config('app.name', 'EasyCRM') }}</title>
+    <link rel="icon" href="{{ asset('assets/img/easycrm-mark.svg') }}" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet" crossorigin="anonymous">
     <style>
         body {
@@ -15,6 +16,12 @@
             width: min(420px, 92vw);
             border: 0;
             box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+        }
+        .login-logo {
+            display: block;
+            width: min(290px, 100%);
+            height: auto;
+            margin: 0 auto 1.5rem;
         }
         .login-brand {
             display: inline-flex;
@@ -34,12 +41,14 @@
     @include('partials.global-css')
 </head>
 @php
-    $appName = config('app.name', 'EeasyCRM');
+    $appName = config('app.name', 'EasyCRM');
     $appSlogan = config('app.slogan', 'Exactly What You Need');
+    $appLogo = asset('assets/img/easycrm-logo.svg');
 @endphp
 <body class="d-flex align-items-center justify-content-center">
     <div class="card login-card">
         <div class="card-body p-4 p-md-5">
+            <img class="login-logo" src="{{ $appLogo }}" alt="{{ $appName }}">
             <div class="mb-4">
                 <div class="login-brand text-muted small fw-semibold">
                     <span>{{ $appName }}</span>

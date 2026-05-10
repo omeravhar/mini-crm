@@ -1,4 +1,4 @@
-<div class="row g-4 mb-4">
+<div class="row g-4 mb-4 admin-leads-summary">
     <div class="col-md-4">
         <div class="card shadow-sm border-0">
             <div class="card-body">
@@ -25,20 +25,30 @@
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4">
+<div class="card shadow-sm border-0 mb-4 admin-leads-panel">
     <div class="card-header bg-white">
         <div class="fw-semibold">לידים ללא שיוך</div>
     </div>
     <div class="card-body">
-        @include('partials.lead-table', ['leads' => $leads->whereNull('owner_id'), 'users' => $users, 'showOwnerForm' => true])
+        @include('partials.lead-table', [
+            'leads' => $leads->whereNull('owner_id'),
+            'users' => $users,
+            'showOwnerForm' => true,
+            'hiddenColumns' => ['company', 'interested_in', 'customer'],
+        ])
     </div>
 </div>
 
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm border-0 admin-leads-panel">
     <div class="card-header bg-white">
         <div class="fw-semibold">לידים משויכים</div>
     </div>
     <div class="card-body">
-        @include('partials.lead-table', ['leads' => $leads->whereNotNull('owner_id'), 'users' => $users, 'showOwnerForm' => true])
+        @include('partials.lead-table', [
+            'leads' => $leads->whereNotNull('owner_id'),
+            'users' => $users,
+            'showOwnerForm' => true,
+            'hiddenColumns' => ['company', 'interested_in', 'customer'],
+        ])
     </div>
 </div>
