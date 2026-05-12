@@ -14,6 +14,8 @@ use App\Http\Controllers\LeadStatusController;
 use App\Http\Controllers\NotificationController;
 
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+    Route::get('/webhooks/meta', [IntegrationWebhookController::class, 'metaVerifyShared'])->name('webhooks.meta.shared.verify');
+    Route::post('/webhooks/meta', [IntegrationWebhookController::class, 'metaReceiveShared'])->name('webhooks.meta.shared.receive');
     Route::get('/webhooks/meta/{integration}', [IntegrationWebhookController::class, 'metaVerify'])->name('webhooks.meta.verify');
     Route::post('/webhooks/meta/{integration}', [IntegrationWebhookController::class, 'metaReceive'])->name('webhooks.meta.receive');
     Route::post('/webhooks/google/{integration:webhook_key}', [IntegrationWebhookController::class, 'googleReceive'])->name('webhooks.google.receive');
@@ -47,6 +49,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/newLead', [LeadController::class, 'create'])->name('leads.create');
         Route::post('/newLead', [LeadController::class, 'store'])->name('saveNewLead');
         Route::get('/showAllLeads', [LeadController::class, 'index'])->name('leads.index');
+        Route::post('/leads/bulk-assign', [LeadController::class, 'bulkAssign'])->name('leads.bulk-assign');
         Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
         Route::get('/lead-statuses', [LeadStatusController::class, 'index'])->name('lead-statuses.index');
         Route::post('/lead-statuses', [LeadStatusController::class, 'store'])->name('lead-statuses.store');

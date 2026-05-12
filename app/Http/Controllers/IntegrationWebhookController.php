@@ -5,13 +5,25 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessWebhookEvent;
 use App\Models\Integration;
 use App\Models\WebhookEvent;
+use App\Support\MetaWebhookResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class IntegrationWebhookController extends Controller
 {
-    public function metaVerify(Request $request, string $integration): Response
+    public function metaVerifyShared(Request $request, MetaWebhookResolver $resolver): Response
+    {
+        $integrationModel = $resolver->findIntegrationByVerifyToken($request->query('hub_verify_token'));
+
+        return $this->verifyMetaRequest(
+            $request,
+            $resolver->verifyToken($integrationModel),
+            $integrationModel
+        );
+    }
+
+    public function metaVerify(Request $request, string $integration, MetaWebhookResolver $resolver): Response
     {
         $integrationModel = $this->findIntegrationByWebhookKey($integration);
 
@@ -21,21 +33,25 @@ class IntegrationWebhookController extends Controller
             abort(404);
         }
 
-        $mode = $request->query('hub_mode');
-        $verifyToken = $request->query('hub_verify_token');
-        $challenge = $request->query('hub_challenge');
+        return $this->verifyMetaRequest(
+            $request,
+            $resolver->verifyToken($integrationModel),
+            $integrationModel
+        );
+    }
 
-        if (
-            $mode !== 'subscribe'
-            || ! $integrationModel->verify_token
-            || ! hash_equals($integrationModel->verify_token, (string) $verifyToken)
-        ) {
-            $this->logRejectedWebhook($request, 'meta', $integrationModel, 'Meta verify rejected: verify token mismatch.');
+    public function metaReceiveShared(Request $request, MetaWebhookResolver $resolver): JsonResponse
+    {
+        $payload = $this->payloadFromRequest($request);
+        $integrationModel = $resolver->resolveIntegration($payload);
 
-            abort(403);
+        if (! $integrationModel) {
+            $this->logRejectedWebhook($request, 'meta', null, 'Meta webhook rejected: no active integration matched form_id or page_id.');
+
+            abort(404);
         }
 
-        return response((string) $challenge, 200);
+        return $this->receive($request, $integrationModel, 'meta');
     }
 
     public function metaReceive(Request $request, string $integration): JsonResponse
@@ -49,6 +65,25 @@ class IntegrationWebhookController extends Controller
         }
 
         return $this->receive($request, $integrationModel, 'meta');
+    }
+
+    private function verifyMetaRequest(Request $request, ?string $expectedVerifyToken, ?Integration $integrationModel): Response
+    {
+        $mode = $request->query('hub_mode');
+        $verifyToken = $request->query('hub_verify_token');
+        $challenge = $request->query('hub_challenge');
+
+        if (
+            $mode !== 'subscribe'
+            || ! filled($expectedVerifyToken)
+            || ! hash_equals($expectedVerifyToken, (string) $verifyToken)
+        ) {
+            $this->logRejectedWebhook($request, 'meta', $integrationModel, 'Meta verify rejected: verify token mismatch.');
+
+            abort(403);
+        }
+
+        return response((string) $challenge, 200);
     }
 
     public function googleReceive(Request $request, Integration $integration): JsonResponse

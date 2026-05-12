@@ -431,6 +431,61 @@ class CrmCrudTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_bulk_assign_multiple_leads_to_single_owner(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create(['role' => 'editor']);
+
+        $firstLead = Lead::create([
+            'first_name' => 'Bulk',
+            'last_name' => 'One',
+            'email' => 'bulk-one@example.com',
+            'owner_id' => null,
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $secondLead = Lead::create([
+            'first_name' => 'Bulk',
+            'last_name' => 'Two',
+            'email' => 'bulk-two@example.com',
+            'owner_id' => null,
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->from(route('admin.leads.index'))
+            ->actingAs($admin)
+            ->post(route('admin.leads.bulk-assign'), [
+                'lead_ids' => [$firstLead->id, $secondLead->id],
+                'owner_id' => (string) $owner->id,
+            ])
+            ->assertRedirect(route('admin.leads.index'));
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $firstLead->id,
+            'owner_id' => $owner->id,
+        ]);
+
+        $this->assertDatabaseHas('leads', [
+            'id' => $secondLead->id,
+            'owner_id' => $owner->id,
+        ]);
+
+        $this->assertSame(
+            2,
+            $owner->unreadNotifications()->where('type', LeadAssignedNotification::class)->count()
+        );
+    }
+
     public function test_assigned_owner_receives_popup_notification_when_new_lead_is_created(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

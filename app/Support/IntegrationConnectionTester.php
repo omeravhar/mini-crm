@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Integration;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -37,6 +38,12 @@ class IntegrationConnectionTester
 
         $status = (string) ($config['status'] ?? '');
         $verifyToken = trim((string) ($config['verify_token'] ?? ''));
+        $sharedVerifyToken = trim((string) config('services.meta.webhook_verify_token', ''));
+        $effectiveVerifyToken = $verifyToken !== ''
+            ? $verifyToken
+            : ($sharedVerifyToken !== ''
+                ? $sharedVerifyToken
+                : trim((string) ($integration?->verify_token ?? '')));
         $accessToken = trim((string) ($config['access_token'] ?? ''));
         $pageId = trim((string) ($config['external_page_id'] ?? ''));
         $callbackUrl = $config['callback_url'] ?? null;
@@ -56,9 +63,13 @@ class IntegrationConnectionTester
         $this->check(
             $checks,
             'Verify Token',
-            $verifyToken !== '' ? 'success' : 'error',
-            $verifyToken !== ''
-                ? 'יש Verify Token. זה הערך שמעתיקים גם למסך ה-Webhooks של Meta בזמן האימות הראשוני.'
+            $effectiveVerifyToken !== '' ? 'success' : 'error',
+            $effectiveVerifyToken !== ''
+                ? ($verifyToken !== ''
+                    ? 'יש Verify Token. זה הערך שמעתיקים גם למסך ה-Webhooks של Meta בזמן האימות הראשוני.'
+                    : ($sharedVerifyToken !== ''
+                        ? 'יש Verify Token משותף שמוגדר בשרת דרך META_WEBHOOK_VERIFY_TOKEN.'
+                        : 'יש Verify Token שמור בחיבור הקיים.'))
                 : 'חסר Verify Token. Meta לא תצליח לאמת את ה-webhook בלי ערך זהה גם כאן וגם בצד של Meta.'
         );
 
@@ -91,11 +102,11 @@ class IntegrationConnectionTester
 
         $this->check(
             $checks,
-            'Page / Asset ID',
+            'Page ID / Asset ID',
             $pageId !== '' ? 'success' : 'warning',
             $pageId !== ''
                 ? 'יש Page ID/Asset ID. זה מאפשר לבדוק גישה לעמוד ולטפסים שלו.'
-                : 'מומלץ למלא Page / Asset ID כדי לוודא שה-token באמת רואה את העמוד שממנו מגיעים הלידים.'
+                : 'מומלץ למלא Page ID / Asset ID כדי לוודא שה-token באמת רואה את העמוד שממנו מגיעים הלידים. ב-Meta זה צריך להיות ה-Page ID של דף הפייסבוק, לא BM ID או asset אחר.'
         );
 
         if ($integration) {
@@ -146,16 +157,13 @@ class IntegrationConnectionTester
                 return $this->result('meta', $checks);
             }
 
+            $pageAccessToken = $this->fetchMetaPageAccessToken($api, $accessToken, $pageId);
             $pageResponse = $api->get($pageId, [
-                'fields' => 'id,name,access_token',
+                'fields' => 'id,name',
                 'access_token' => $accessToken,
             ]);
 
             if ($pageResponse->successful()) {
-                $pageAccessToken = is_scalar($pageResponse->json('access_token'))
-                    && trim((string) $pageResponse->json('access_token')) !== ''
-                        ? trim((string) $pageResponse->json('access_token'))
-                        : null;
                 $this->check(
                     $checks,
                     'Page Access Token',
@@ -515,5 +523,32 @@ class IntegrationConnectionTester
     private function facebookErrorMessage(Response $response, string $fallback): string
     {
         return (string) data_get($response->json(), 'error.message', $fallback.' (HTTP '.$response->status().').');
+    }
+
+    private function fetchMetaPageAccessToken(PendingRequest $api, string $accessToken, string $pageId): ?string
+    {
+        $response = $api->get('me/accounts', [
+            'fields' => 'id,name,access_token',
+            'limit' => 100,
+            'access_token' => $accessToken,
+        ]);
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        foreach ((array) ($response->json('data') ?? []) as $page) {
+            if (! is_array($page) || (string) ($page['id'] ?? '') !== $pageId) {
+                continue;
+            }
+
+            $pageAccessToken = $page['access_token'] ?? null;
+
+            if (is_scalar($pageAccessToken) && trim((string) $pageAccessToken) !== '') {
+                return trim((string) $pageAccessToken);
+            }
+        }
+
+        return null;
     }
 }

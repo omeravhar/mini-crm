@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\WebhookEvent;
 use App\Support\IntegrationConnectionTester;
 use App\Support\MetaIntegrationSynchronizer;
+use App\Support\MetaWebhookResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -251,7 +252,7 @@ class IntegrationController extends Controller
         $data['is_persisted'] = (bool) $integration;
         $data['callback_url'] = $integration ? $this->callbackUrlFor($integration) : null;
         $data['verify_url'] = $integration && $integration->platform === 'meta'
-            ? route('webhooks.meta.verify', ['integration' => $integration->webhook_key])
+            ? $this->metaWebhookResolver()->verifyUrl()
             : null;
         $data['active_form_ids'] = $integration
             ? $integration->formMappings
@@ -268,10 +269,15 @@ class IntegrationController extends Controller
     private function callbackUrlFor(Integration $integration): string
     {
         return match ($integration->platform) {
-            'meta' => route('webhooks.meta.receive', ['integration' => $integration->webhook_key]),
+            'meta' => $this->metaWebhookResolver()->receiveUrl(),
             'google' => route('webhooks.google.receive', ['integration' => $integration->webhook_key]),
             'tiktok' => route('webhooks.tiktok.receive', ['integration' => $integration->webhook_key]),
             default => route('webhooks.generic.receive', ['integration' => $integration->webhook_key]),
         };
+    }
+
+    private function metaWebhookResolver(): MetaWebhookResolver
+    {
+        return app(MetaWebhookResolver::class);
     }
 }

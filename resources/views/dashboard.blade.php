@@ -103,6 +103,91 @@
             --icon-glow: rgba(56, 189, 248, 0.28);
         }
 
+        .dashboard-section-card {
+            --section-accent: #3b82f6;
+            padding: 0;
+            border-radius: 20px;
+        }
+
+        .dashboard-section-card .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.9rem;
+            padding: 1rem 1.35rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .dashboard-section-card .card-header > div:last-child {
+            font-size: 1rem;
+        }
+
+        .dashboard-section-card .card-body,
+        .dashboard-section-card .table-responsive,
+        .dashboard-section-card .d-grid {
+            position: relative;
+            z-index: 1;
+        }
+
+        .dashboard-section-card--tasks {
+            --card-color: #8b5cf6;
+            --section-accent: #8b5cf6;
+            --section-glow: rgba(139, 92, 246, 0.24);
+        }
+
+        .dashboard-section-card--leads {
+            --card-color: #3b82f6;
+            --section-accent: #3b82f6;
+            --section-glow: rgba(59, 130, 246, 0.24);
+        }
+
+        .dashboard-section-card--customers {
+            --card-color: #22c55e;
+            --section-accent: #22c55e;
+            --section-glow: rgba(34, 197, 94, 0.24);
+        }
+
+        .dashboard-section-icon {
+            position: relative;
+            isolation: isolate;
+            flex: 0 0 auto;
+            width: 3.75rem;
+            aspect-ratio: 1;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            color: var(--section-accent);
+        }
+
+        .dashboard-section-icon::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 18%, rgba(248, 250, 252, 0.94) 100%);
+            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14), 0 12px 24px rgba(15, 23, 42, 0.08);
+            z-index: -2;
+        }
+
+        .dashboard-section-icon::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(circle at 18% 78%, var(--section-glow) 0, transparent 45%);
+            z-index: -1;
+        }
+
+        .dashboard-section-icon svg {
+            width: 2rem;
+            height: 2rem;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.05;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
         @media (max-width: 575.98px) {
             .dashboard-stat-card {
                 min-height: 116px;
@@ -116,6 +201,19 @@
             .dashboard-stat-icon svg {
                 width: 2.2rem;
                 height: 2.2rem;
+            }
+
+            .dashboard-section-card .card-header {
+                padding: 0.9rem 1rem;
+            }
+
+            .dashboard-section-icon {
+                width: 3.35rem;
+            }
+
+            .dashboard-section-icon svg {
+                width: 1.8rem;
+                height: 1.8rem;
             }
         }
     </style>
@@ -223,8 +321,16 @@
 
     <div class="row g-4">
         <div class="col-xl-6">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 dashboard-section-card dashboard-section-card--leads">
                 <div class="card-header bg-white">
+                    <div class="dashboard-section-icon" aria-hidden="true">
+                        <svg viewBox="0 0 48 48">
+                            <circle cx="18.5" cy="15" r="6.25" />
+                            <path d="M8 35v-2.6c0-5.7 4.7-10.4 10.5-10.4S29 26.7 29 32.4V35" />
+                            <path d="M33.8 14.2c3.1 0 5.7 2.5 5.7 5.7s-2.6 5.6-5.7 5.6" />
+                            <path d="M33.2 26.3c4.3 0 7.8 3.5 7.8 7.8V35" />
+                        </svg>
+                    </div>
                     <div class="fw-semibold">לידים אחרונים</div>
                 </div>
                 <div class="table-responsive d-none d-lg-block">
@@ -273,8 +379,22 @@
         </div>
 
         <div class="col-xl-6">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 dashboard-section-card dashboard-section-card--tasks">
                 <div class="card-header bg-white">
+                    <div class="dashboard-section-icon" aria-hidden="true">
+                        <svg viewBox="0 0 48 48">
+                            <path d="M14 9.5v5" />
+                            <path d="M34 9.5v5" />
+                            <rect x="9" y="12.5" width="30" height="26" rx="6" />
+                            <path d="M9 20h30" />
+                            <path d="M17 27h.01" />
+                            <path d="M24 27h.01" />
+                            <path d="M31 27h.01" />
+                            <path d="M17 33h.01" />
+                            <path d="M24 33h.01" />
+                            <path d="M31 33h.01" />
+                        </svg>
+                    </div>
                     <div class="fw-semibold">משימות מעקב קרובות</div>
                 </div>
                 <div class="table-responsive d-none d-lg-block">
@@ -318,8 +438,15 @@
         </div>
 
         <div class="col-12">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 dashboard-section-card dashboard-section-card--customers">
                 <div class="card-header bg-white">
+                    <div class="dashboard-section-icon" aria-hidden="true">
+                        <svg viewBox="0 0 48 48">
+                            <circle cx="24" cy="18" r="6.3" />
+                            <path d="M13.5 35v-2.7c0-5.8 4.7-10.5 10.5-10.5s10.5 4.7 10.5 10.5V35" />
+                            <circle cx="24" cy="24" r="15.5" />
+                        </svg>
+                    </div>
                     <div class="fw-semibold">לקוחות אחרונים</div>
                 </div>
                 <div class="table-responsive d-none d-lg-block">

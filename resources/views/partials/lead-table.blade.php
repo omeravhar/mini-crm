@@ -1,11 +1,13 @@
 @php
     $showOwnerForm = $showOwnerForm ?? false;
+    $enableBulkSelection = $enableBulkSelection ?? false;
     $users = $users ?? collect();
     $hiddenColumns = $hiddenColumns ?? [];
     $showCompanyColumn = ! in_array('company', $hiddenColumns, true);
     $showInterestedInColumn = ! in_array('interested_in', $hiddenColumns, true);
     $showCustomerColumn = ! in_array('customer', $hiddenColumns, true);
     $desktopColumnCount = 11
+        + ($enableBulkSelection ? 1 : 0)
         + ($showCompanyColumn ? 1 : 0)
         + ($showInterestedInColumn ? 1 : 0)
         + ($showCustomerColumn ? 1 : 0);
@@ -33,6 +35,17 @@
     <table class="table table-hover align-middle lead-management-table">
         <thead>
             <tr>
+                @if ($enableBulkSelection)
+                    <th class="lead-bulk-cell">
+                        <input
+                            class="form-check-input lead-bulk-toggle"
+                            type="checkbox"
+                            value="1"
+                            data-lead-select-all
+                            aria-label="בחר את כל הלידים בטבלה"
+                        >
+                    </th>
+                @endif
                 <th>#</th>
                 <th>שם</th>
                 @if ($showCompanyColumn)
@@ -58,6 +71,17 @@
         <tbody>
             @forelse ($leads as $lead)
                 <tr>
+                    @if ($enableBulkSelection)
+                        <td class="lead-bulk-cell">
+                            <input
+                                class="form-check-input lead-bulk-toggle"
+                                type="checkbox"
+                                value="{{ $lead->id }}"
+                                data-lead-select-row
+                                aria-label="בחר את {{ $lead->full_name }}"
+                            >
+                        </td>
+                    @endif
                     <td>{{ $lead->id }}</td>
                     <td>
                         <div class="fw-semibold">{{ $lead->full_name }}</div>
@@ -161,6 +185,19 @@
     @forelse ($leads as $lead)
         <div class="card mobile-record-card">
             <div class="card-body d-grid gap-3">
+                @if ($enableBulkSelection)
+                    <div class="d-flex justify-content-end">
+                        <label class="form-check d-inline-flex align-items-center gap-2 small mb-0">
+                            <input
+                                class="form-check-input lead-bulk-toggle mt-0"
+                                type="checkbox"
+                                value="{{ $lead->id }}"
+                                data-lead-select-row
+                            >
+                            <span>בחירה</span>
+                        </label>
+                    </div>
+                @endif
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
                         <div class="fw-semibold">{{ $lead->full_name }}</div>

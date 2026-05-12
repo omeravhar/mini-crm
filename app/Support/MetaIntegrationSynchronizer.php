@@ -34,8 +34,10 @@ class MetaIntegrationSynchronizer
 
         $accessToken = trim((string) $integration->access_token);
         $pageId = trim((string) $integration->external_page_id);
-        $callbackUrl = route('webhooks.meta.receive', ['integration' => $integration->webhook_key]);
-        $verifyUrl = route('webhooks.meta.verify', ['integration' => $integration->webhook_key]);
+        $resolver = app(MetaWebhookResolver::class);
+        $callbackUrl = $resolver->receiveUrl();
+        $verifyUrl = $resolver->verifyUrl();
+        $verifyToken = $resolver->verifyToken($integration);
 
         $this->check(
             $checks,
@@ -47,10 +49,10 @@ class MetaIntegrationSynchronizer
         $this->check(
             $checks,
             'Verify URL',
-            filled($integration->verify_token) ? 'success' : 'warning',
-            filled($integration->verify_token)
+            filled($verifyToken) ? 'success' : 'warning',
+            filled($verifyToken)
                 ? 'יש Verify Token שמוכן לאימות מול Meta: '.$verifyUrl
-                : 'חסר Verify Token. מומלץ לשמור ערך זה לפני אימות webhook בצד Meta.'
+                : 'חסר Verify Token. שמור Verify Token משותף ב-META_WEBHOOK_VERIFY_TOKEN או הזן Verify Token בחיבור.'
         );
 
         $this->syncAppWebhookSubscription($integration, $callbackUrl, $checks);
@@ -121,7 +123,7 @@ class MetaIntegrationSynchronizer
             }
 
             $pageResponse = $this->graph()->get($pageId, [
-                'fields' => 'id,name,access_token',
+                'fields' => 'id,name',
                 'access_token' => $accessToken,
             ]);
 
@@ -137,7 +139,6 @@ class MetaIntegrationSynchronizer
             }
 
             $pageName = $pageResponse->json('name') ?: $pageId;
-            $pageAccessToken = $this->stringValue($pageResponse->json('access_token')) ?: $pageAccessToken;
             $this->storePageDetails($integration, $pageId, $this->stringValue($pageName));
 
             $this->check(
@@ -209,7 +210,7 @@ class MetaIntegrationSynchronizer
     {
         $appId = trim((string) config('services.meta.app_id', ''));
         $appSecret = trim((string) config('services.meta.app_secret', ''));
-        $verifyToken = trim((string) $integration->verify_token);
+        $verifyToken = trim((string) (app(MetaWebhookResolver::class)->verifyToken($integration) ?? ''));
 
         if ($appId === '' || $appSecret === '') {
             $this->check(
@@ -227,7 +228,7 @@ class MetaIntegrationSynchronizer
                 $checks,
                 'Meta App Webhook',
                 'warning',
-                'חסר Verify Token בחיבור. בלי Verify Token אי אפשר לרשום אוטומטית Webhook ברמת האפליקציה.'
+                'חסר Verify Token. בלי META_WEBHOOK_VERIFY_TOKEN או Verify Token בחיבור אי אפשר לרשום אוטומטית Webhook ברמת האפליקציה.'
             );
 
             return;

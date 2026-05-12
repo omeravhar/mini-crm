@@ -19,6 +19,13 @@ class IntegrationManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.meta.webhook_verify_token' => '']);
+    }
+
     public function test_admin_can_create_integration_and_form_mapping(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -77,6 +84,27 @@ class IntegrationManagementTest extends TestCase
         ]))
             ->assertOk()
             ->assertSeeText('challenge-token');
+    }
+
+    public function test_shared_meta_verify_endpoint_returns_challenge_for_matching_token(): void
+    {
+        config([
+            'services.meta.webhook_verify_token' => 'shared-meta-secret',
+        ]);
+
+        Integration::create([
+            'name' => 'Meta Shared Verify',
+            'platform' => 'meta',
+            'status' => 'active',
+        ]);
+
+        $this->get(route('webhooks.meta.shared.verify', [
+            'hub_mode' => 'subscribe',
+            'hub_verify_token' => 'shared-meta-secret',
+            'hub_challenge' => 'shared-challenge-token',
+        ]))
+            ->assertOk()
+            ->assertSeeText('shared-challenge-token');
     }
 
     public function test_invalid_meta_verify_attempt_is_logged(): void
@@ -231,6 +259,183 @@ class IntegrationManagementTest extends TestCase
         $this->assertSame('ad_456', $lead->external_ad_id);
         $this->assertSame($owner->id, $lead->owner_id);
         $this->assertSame('leadgen_123', data_get($event->fresh()->payload, '_meta_fetched_lead.id'));
+    }
+
+    public function test_shared_meta_webhook_routes_by_form_id_to_matching_integration(): void
+    {
+        $ownerA = User::factory()->create(['role' => 'editor']);
+        $ownerB = User::factory()->create(['role' => 'editor']);
+
+        $integrationA = Integration::create([
+            'name' => 'Meta Page A',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-a',
+            'external_page_id' => 'page_A',
+            'access_token' => 'token-a',
+        ]);
+
+        $integrationB = Integration::create([
+            'name' => 'Meta Page B',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-b',
+            'external_page_id' => 'page_B',
+            'access_token' => 'token-b',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integrationA->id,
+            'external_form_id' => 'form_A',
+            'default_owner_id' => $ownerA->id,
+            'is_active' => true,
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integrationB->id,
+            'external_form_id' => 'form_B',
+            'default_owner_id' => $ownerB->id,
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://graph.facebook.com/v23.0/leadgen_form_b*' => Http::response([
+                'id' => 'leadgen_form_b',
+                'created_time' => '2026-05-10T07:09:00+0000',
+                'form_id' => 'form_B',
+                'campaign_id' => 'cmp_B',
+                'campaign_name' => 'Campaign B',
+                'ad_id' => 'ad_B',
+                'field_data' => [
+                    [
+                        'name' => 'full_name',
+                        'values' => ['Noa Levi'],
+                    ],
+                    [
+                        'name' => 'email',
+                        'values' => ['noa@example.com'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->postJson(route('webhooks.meta.shared.receive'), [
+            'object' => 'page',
+            'entry' => [
+                [
+                    'id' => 'page_B',
+                    'time' => 1777446540,
+                    'changes' => [
+                        [
+                            'field' => 'leadgen',
+                            'value' => [
+                                'leadgen_id' => 'leadgen_form_b',
+                                'form_id' => 'form_B',
+                                'page_id' => 'page_B',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ])
+            ->assertStatus(202)
+            ->assertJsonPath('status', 'accepted');
+
+        $event = WebhookEvent::firstOrFail();
+        $lead = Lead::firstOrFail();
+
+        $this->assertSame($integrationB->id, $event->integration_id);
+        $this->assertSame('form_B', $event->external_form_id);
+        $this->assertSame($ownerB->id, $lead->owner_id);
+
+        Http::assertSent(function (HttpRequest $request) {
+            return str_contains($request->url(), '/leadgen_form_b')
+                && ($request->data()['access_token'] ?? null) === 'token-b';
+        });
+    }
+
+    public function test_shared_meta_webhook_routes_by_page_id_when_form_id_missing(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+
+        Integration::create([
+            'name' => 'Meta Page A',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-a',
+            'external_page_id' => 'page_A',
+            'access_token' => 'token-a',
+        ]);
+
+        $integrationB = Integration::create([
+            'name' => 'Meta Page B',
+            'platform' => 'meta',
+            'status' => 'active',
+            'verify_token' => 'verify-b',
+            'external_page_id' => 'page_B',
+            'access_token' => 'token-b',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integrationB->id,
+            'external_form_id' => 'form_page_fallback',
+            'default_owner_id' => $owner->id,
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://graph.facebook.com/v23.0/leadgen_page_only*' => Http::response([
+                'id' => 'leadgen_page_only',
+                'created_time' => '2026-05-10T07:09:00+0000',
+                'form_id' => 'form_page_fallback',
+                'campaign_id' => 'cmp_page',
+                'campaign_name' => 'Page Fallback Campaign',
+                'ad_id' => 'ad_page',
+                'field_data' => [
+                    [
+                        'name' => 'full_name',
+                        'values' => ['Gil Cohen'],
+                    ],
+                    [
+                        'name' => 'phone_number',
+                        'values' => ['0507654321'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->postJson(route('webhooks.meta.shared.receive'), [
+            'object' => 'page',
+            'entry' => [
+                [
+                    'id' => 'page_B',
+                    'time' => 1777446540,
+                    'changes' => [
+                        [
+                            'field' => 'leadgen',
+                            'value' => [
+                                'leadgen_id' => 'leadgen_page_only',
+                                'page_id' => 'page_B',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ])
+            ->assertStatus(202)
+            ->assertJsonPath('status', 'accepted');
+
+        $event = WebhookEvent::firstOrFail();
+        $lead = Lead::firstOrFail();
+
+        $this->assertSame($integrationB->id, $event->integration_id);
+        $this->assertSame('form_page_fallback', $event->fresh()->external_form_id);
+        $this->assertSame($owner->id, $lead->owner_id);
+
+        Http::assertSent(function (HttpRequest $request) {
+            return str_contains($request->url(), '/leadgen_page_only')
+                && ($request->data()['access_token'] ?? null) === 'token-b';
+        });
     }
 
     public function test_meta_webhook_maps_hebrew_field_labels_to_crm_fields(): void
@@ -1005,11 +1210,22 @@ class IntegrationManagementTest extends TestCase
                 ]);
             }
 
-            if (str_contains($request->url(), '/12039931243197?fields=id%2Cname%2Caccess_token&access_token=stored-meta-token')) {
+            if (str_contains($request->url(), '/me/accounts?fields=id%2Cname%2Caccess_token&limit=100&access_token=stored-meta-token')) {
+                return Http::response([
+                    'data' => [
+                        [
+                            'id' => '12039931243197',
+                            'name' => 'Ritzufim Page',
+                            'access_token' => 'page-token',
+                        ],
+                    ],
+                ]);
+            }
+
+            if (str_contains($request->url(), '/12039931243197?fields=id%2Cname&access_token=stored-meta-token')) {
                 return Http::response([
                     'id' => '12039931243197',
                     'name' => 'Ritzufim Page',
-                    'access_token' => 'page-token',
                 ]);
             }
 
@@ -1101,11 +1317,10 @@ class IntegrationManagementTest extends TestCase
                 ]);
             }
 
-            if ($request->method() === 'GET' && str_contains($request->url(), '/12039931243197?fields=id%2Cname%2Caccess_token')) {
+            if ($request->method() === 'GET' && str_contains($request->url(), '/12039931243197?fields=id%2Cname')) {
                 return Http::response([
                     'id' => '12039931243197',
                     'name' => 'Ritzufim Page',
-                    'access_token' => 'page-token',
                 ]);
             }
 
@@ -1173,7 +1388,7 @@ class IntegrationManagementTest extends TestCase
                 && str_contains($request->url(), '/2527879594331333/subscriptions')
                 && ($request->data()['object'] ?? null) === 'page'
                 && ($request->data()['fields'] ?? null) === 'leadgen'
-                && ($request->data()['callback_url'] ?? null) === route('webhooks.meta.receive', ['integration' => $integration->webhook_key])
+                && ($request->data()['callback_url'] ?? null) === route('webhooks.meta.shared.receive')
                 && ($request->data()['verify_token'] ?? null) === 'verify-123'
                 && ($request->data()['access_token'] ?? null) === '2527879594331333|app-secret';
         });

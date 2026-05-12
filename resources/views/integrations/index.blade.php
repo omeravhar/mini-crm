@@ -7,7 +7,7 @@
         'disabled' => 'text-bg-danger',
     ];
     $webhookExamples = [
-        'meta' => url('/webhooks/meta/WEBHOOK_KEY'),
+        'meta' => url('/webhooks/meta'),
         'google' => url('/webhooks/google/WEBHOOK_KEY'),
         'tiktok' => url('/webhooks/tiktok/WEBHOOK_KEY'),
         'generic' => url('/webhooks/generic/WEBHOOK_KEY'),
@@ -17,9 +17,9 @@
         'name' => 'שם פנימי אצלכם במערכת. בוחרים אותו ידנית כדי לזהות את החיבור, למשל "Meta Leads Ritzufim".',
         'platform' => 'הפלטפורמה שממנה יגיעו הלידים. הבחירה קובעת איזה Callback URL יווצר ואיך השרת יפרש את ה-webhook.',
         'status' => 'Active = השרת יקבל ויעבד לידים. Draft = הכנה בלבד. Disabled = החיבור שמור אבל כבוי.',
-        'verify_token' => 'ב-Meta זה ערך שאתה ממציא בעצמך ומדביק גם כאן וגם במסך ה-Webhooks של Meta. ב-Google Ads Lead Forms השדה הזה לא נדרש.',
+        'verify_token' => 'ב-Meta אפשר לשמור Verify Token בחיבור, אבל אם עובדים עם Meta App אחת מומלץ להגדיר META_WEBHOOK_VERIFY_TOKEN משותף בשרת. ב-Google Ads Lead Forms השדה הזה לא נדרש.',
         'external_account_id' => 'מזהה החשבון העסקי. ב-Meta זה בדרך כלל Business Manager ID, ובמערכות אחרות זה יכול להיות Advertiser/Account ID.',
-        'external_page_id' => 'מזהה העמוד או ה-asset שממנו יוצאים הלידים. ב-Meta זה בדרך כלל Page ID של דף הפייסבוק המחובר לטופס. ב-Google אפשר להשתמש בשדה הזה לצורך Campaign / Customer ID אם אתם רוצים לשמור הקשר נוסף.',
+        'external_page_id' => 'מזהה העמוד או ה-asset שממנו יוצאים הלידים. ב-Meta זה חייב להיות ה-Page ID של דף הפייסבוק שמחובר לטופס הלידים. לא מדביקים כאן Business Manager ID, App ID, Instagram ID, Form ID או asset אחר. ב-Google אפשר להשתמש בשדה הזה לצורך Campaign / Customer ID אם אתם רוצים לשמור הקשר נוסף.',
         'callback_url' => 'זו הכתובת שהפלטפורמה צריכה לקרוא אליה כשהגיע ליד חדש. מעתיקים אותה למסך ה-webhook של הפלטפורמה.',
         'verify_url' => 'ב-Meta זו כתובת האימות הראשונית של ה-webhook. משתמשים בה יחד עם ה-Verify Token בזמן החיבור.',
         'access_token' => 'אסימון גישה של הפלטפורמה. ב-Meta אפשר להוציא דרך <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Graph API Explorer</a> או OAuth של האפליקציה. בלי Access Token המערכת לא תוכל למשוך פרטי ליד מלאים מ-Meta.',
@@ -119,7 +119,7 @@
                                 {{ $renderFieldHelp('external_account_id') }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label" for="integration_external_page_id">Page / Asset ID</label>
+                                <label class="form-label" for="integration_external_page_id">Page ID (Meta) / Asset ID</label>
                                 <input class="form-control" id="integration_external_page_id" name="external_page_id" value="{{ old('external_page_id') }}">
                                 {{ $renderFieldHelp('external_page_id') }}
                             </div>
@@ -155,7 +155,7 @@
                                     <div class="small mb-1">Google Ads Lead Forms: <span class="font-monospace">{{ $webhookExamples['google'] }}</span></div>
                                     <div class="small mb-1">TikTok: <span class="font-monospace">{{ $webhookExamples['tiktok'] }}</span></div>
                                     <div class="small mb-2">Generic: <span class="font-monospace">{{ $webhookExamples['generic'] }}</span></div>
-                                    <div class="small text-muted">הנתיב לא תמיד כולל <span class="font-monospace">meta</span>. לפייסבוק ואינסטגרם משתמשים ב-<span class="font-monospace">/webhooks/meta/...</span>, ל-Google ב-<span class="font-monospace">/webhooks/google/...</span>, ולטיקטוק ב-<span class="font-monospace">/webhooks/tiktok/...</span>. אחרי יצירת החיבור המערכת תציג לך את ה-Callback URL המדויק עם ה-<span class="font-monospace">Webhook Key</span> האמיתי.</div>
+                                    <div class="small text-muted">ב-Meta / Facebook / Instagram משתמשים ב-<span class="font-monospace">/webhooks/meta</span> אחד משותף, והמערכת מנתבת פנימית לפי Page ID ו-Form ID. ב-Google משתמשים ב-<span class="font-monospace">/webhooks/google/...</span>, ולטיקטוק ב-<span class="font-monospace">/webhooks/tiktok/...</span>.</div>
                                 </div>
                             </div>
                         </div>
@@ -179,13 +179,13 @@
         @forelse ($integrations as $integration)
             @php
                 $callbackUrl = match ($integration->platform) {
-                    'meta' => route('webhooks.meta.receive', ['integration' => $integration->webhook_key]),
+                    'meta' => route('webhooks.meta.shared.receive'),
                     'google' => route('webhooks.google.receive', ['integration' => $integration->webhook_key]),
                     'tiktok' => route('webhooks.tiktok.receive', ['integration' => $integration->webhook_key]),
                     default => route('webhooks.generic.receive', ['integration' => $integration->webhook_key]),
                 };
                 $verifyUrl = $integration->platform === 'meta'
-                    ? route('webhooks.meta.verify', ['integration' => $integration->webhook_key])
+                    ? route('webhooks.meta.shared.verify')
                     : null;
             @endphp
 
@@ -263,7 +263,7 @@
                                     {{ $renderFieldHelp('external_account_id') }}
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Page / Asset ID</label>
+                                    <label class="form-label">Page ID (Meta) / Asset ID</label>
                                     <input class="form-control" name="external_page_id" value="{{ $integration->external_page_id }}">
                                     {{ $renderFieldHelp('external_page_id') }}
                                 </div>

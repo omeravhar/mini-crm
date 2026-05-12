@@ -34,6 +34,7 @@
             'leads' => $leads->whereNull('owner_id'),
             'users' => $users,
             'showOwnerForm' => true,
+            'enableBulkSelection' => true,
             'hiddenColumns' => ['company', 'interested_in', 'customer'],
         ])
     </div>
@@ -48,6 +49,7 @@
             'leads' => $leads->whereNotNull('owner_id'),
             'users' => $users,
             'showOwnerForm' => true,
+            'enableBulkSelection' => true,
             'hiddenColumns' => ['company', 'interested_in', 'customer'],
         ])
     </div>

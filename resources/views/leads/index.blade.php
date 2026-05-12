@@ -105,6 +105,38 @@
             </div>
         </div>
     </form>
+
+    <form method="POST" action="{{ route('admin.leads.bulk-assign') }}" class="card shadow-sm border-0 admin-leads-bulk-bar" data-bulk-assign-form>
+        @csrf
+        <div class="card-body">
+            <div class="admin-leads-bulk-bar__grid">
+                <div class="admin-leads-bulk-bar__summary">
+                    <div class="fw-semibold">שיוך מרובה</div>
+                    <div class="small text-muted">
+                        נבחרו <span data-bulk-selected-count>0</span> לידים
+                    </div>
+                </div>
+                <div class="admin-leads-bulk-bar__owner">
+                    <label class="form-label mb-1" for="bulk_owner_id">משתמש יעד</label>
+                    <select class="form-select" id="bulk_owner_id" name="owner_id" data-bulk-owner-select>
+                        <option value="">בחר משתמש</option>
+                        <option value="unassigned">ללא שיוך</option>
+                        @foreach ($users as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="admin-leads-bulk-bar__actions">
+                    <button class="btn btn-primary" type="submit" data-bulk-assign-submit disabled>שייך נבחרים</button>
+                    <button class="btn btn-outline-secondary" type="button" data-bulk-clear-selection disabled>נקה בחירה</button>
+                </div>
+            </div>
+            <div class="admin-leads-bulk-bar__feedback small text-muted mt-2" data-bulk-feedback>
+                בחר לידים מהטבלה ואז בחר משתמש אחד לשיוך.
+            </div>
+            <div data-bulk-selected-inputs></div>
+        </div>
+    </form>
 @endsection
 
 @section('content')
@@ -112,6 +144,89 @@
         .all-leads-page-header {
             background: #f4f6fb;
             margin-bottom: 1rem;
+        }
+
+        .all-leads-page-header .page-header-bar {
+            margin-bottom: 0.75rem;
+            padding-right: 0.6rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar {
+            margin-bottom: 0;
+            padding: 0;
+            border-radius: 16px;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar .card-body {
+            padding: 0.6rem 0.85rem 0.5rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__grid {
+            display: grid;
+            gap: 0.45rem 0.75rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.25rem 0.6rem;
+            line-height: 1.2;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__summary .fw-semibold {
+            font-size: 0.9rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__summary .small {
+            font-size: 0.8rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__owner {
+            min-width: min(100%, 11.5rem);
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__owner .form-label {
+            margin-bottom: 0.2rem !important;
+            font-size: 0.78rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__owner .form-select {
+            min-height: 1.95rem;
+            padding-block: 0.2rem;
+            font-size: 0.82rem;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__actions .btn {
+            min-height: 1.95rem;
+            padding: 0.26rem 0.68rem;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+
+        .all-leads-page-header .admin-leads-bulk-bar__feedback {
+            margin-top: 0.2rem !important;
+            font-size: 0.76rem;
+            line-height: 1.3;
+        }
+
+        .all-leads-page .lead-bulk-cell {
+            width: 3rem;
+            min-width: 3rem;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .all-leads-page .lead-bulk-toggle {
+            float: none;
+            margin: 0;
         }
 
         .all-leads-page .card-stat {
@@ -164,6 +279,11 @@
                 z-index: 6;
             }
 
+            .all-leads-page-header .admin-leads-bulk-bar__grid {
+                grid-template-columns: auto minmax(11rem, 12.5rem) auto;
+                align-items: center;
+            }
+
             .all-leads-page-header .admin-leads-filter {
                 position: static;
                 top: auto;
@@ -204,8 +324,16 @@
         (() => {
             const container = document.getElementById('adminLeadsContent');
             const pageHeader = document.querySelector('[data-page-header-shell].all-leads-page-header');
+            const bulkForm = document.querySelector('[data-bulk-assign-form]');
+            const bulkOwnerSelect = bulkForm?.querySelector('[data-bulk-owner-select]') ?? null;
+            const bulkSubmitButton = bulkForm?.querySelector('[data-bulk-assign-submit]') ?? null;
+            const bulkClearButton = bulkForm?.querySelector('[data-bulk-clear-selection]') ?? null;
+            const bulkSelectedCount = bulkForm?.querySelector('[data-bulk-selected-count]') ?? null;
+            const bulkSelectedInputs = bulkForm?.querySelector('[data-bulk-selected-inputs]') ?? null;
+            const bulkFeedback = bulkForm?.querySelector('[data-bulk-feedback]') ?? null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
             const pollIntervalMs = 4000;
+            const selectedLeadIds = new Set();
             let refreshPromise = null;
 
             if (!container) {
@@ -221,7 +349,86 @@
                 document.documentElement.style.setProperty('--admin-leads-filter-offset', `${pageHeaderHeight}px`);
             };
 
+            const updateSelectAllStates = () => {
+                container.querySelectorAll('[data-lead-select-all]').forEach((toggle) => {
+                    const table = toggle.closest('table');
+                    if (!(table instanceof HTMLTableElement)) {
+                        return;
+                    }
+
+                    const rowCheckboxes = [...table.querySelectorAll('[data-lead-select-row]')];
+                    const checkedCount = rowCheckboxes.filter((checkbox) => checkbox.checked).length;
+
+                    toggle.checked = rowCheckboxes.length > 0 && checkedCount === rowCheckboxes.length;
+                    toggle.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length;
+                });
+            };
+
+            const renderBulkInputs = () => {
+                if (!bulkSelectedInputs) {
+                    return;
+                }
+
+                bulkSelectedInputs.replaceChildren();
+
+                [...selectedLeadIds]
+                    .sort((left, right) => Number(left) - Number(right))
+                    .forEach((leadId) => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'lead_ids[]';
+                        input.value = leadId;
+                        bulkSelectedInputs.appendChild(input);
+                    });
+            };
+
+            const updateBulkControls = () => {
+                const count = selectedLeadIds.size;
+                const hasOwnerTarget = !!bulkOwnerSelect && bulkOwnerSelect.value !== '';
+
+                if (bulkSelectedCount) {
+                    bulkSelectedCount.textContent = String(count);
+                }
+
+                if (bulkSubmitButton) {
+                    bulkSubmitButton.disabled = count === 0 || !hasOwnerTarget;
+                }
+
+                if (bulkClearButton) {
+                    bulkClearButton.disabled = count === 0;
+                }
+
+                if (bulkFeedback) {
+                    bulkFeedback.textContent = count === 0
+                        ? 'בחר לידים מהטבלה ואז בחר משתמש אחד לשיוך.'
+                        : hasOwnerTarget
+                            ? `מוכנים לשיוך ${count} לידים.`
+                            : `נבחרו ${count} לידים. בחר משתמש יעד כדי להמשיך.`;
+                }
+
+                renderBulkInputs();
+            };
+
+            const syncSelectionState = () => {
+                const rowCheckboxes = [...container.querySelectorAll('[data-lead-select-row]')];
+                const availableIds = new Set(rowCheckboxes.map((checkbox) => checkbox.value));
+
+                [...selectedLeadIds].forEach((leadId) => {
+                    if (!availableIds.has(leadId)) {
+                        selectedLeadIds.delete(leadId);
+                    }
+                });
+
+                rowCheckboxes.forEach((checkbox) => {
+                    checkbox.checked = selectedLeadIds.has(checkbox.value);
+                });
+
+                updateSelectAllStates();
+                updateBulkControls();
+            };
+
             updateStickyOffsets();
+            syncSelectionState();
             window.addEventListener('resize', updateStickyOffsets);
 
             const refreshUrl = () => {
@@ -252,6 +459,8 @@
 
                         const data = await response.json();
                         container.innerHTML = data.html;
+                        syncSelectionState();
+                        updateStickyOffsets();
                     })
                     .catch((error) => {
                         console.error(error);
@@ -302,7 +511,63 @@
                 }
             };
 
+            bulkOwnerSelect?.addEventListener('change', () => {
+                updateBulkControls();
+            });
+
+            bulkClearButton?.addEventListener('click', () => {
+                selectedLeadIds.clear();
+                syncSelectionState();
+            });
+
+            bulkForm?.addEventListener('submit', (event) => {
+                const hasOwnerTarget = !!bulkOwnerSelect && bulkOwnerSelect.value !== '';
+
+                if (selectedLeadIds.size === 0 || !hasOwnerTarget) {
+                    event.preventDefault();
+                    updateBulkControls();
+                }
+            });
+
             container.addEventListener('change', async (event) => {
+                const rowCheckbox = event.target.closest('[data-lead-select-row]');
+                if (rowCheckbox instanceof HTMLInputElement) {
+                    if (rowCheckbox.checked) {
+                        selectedLeadIds.add(rowCheckbox.value);
+                    } else {
+                        selectedLeadIds.delete(rowCheckbox.value);
+                    }
+
+                    syncSelectionState();
+
+                    return;
+                }
+
+                const selectAllCheckbox = event.target.closest('[data-lead-select-all]');
+                if (selectAllCheckbox instanceof HTMLInputElement) {
+                    const table = selectAllCheckbox.closest('table');
+
+                    if (table instanceof HTMLTableElement) {
+                        table.querySelectorAll('[data-lead-select-row]').forEach((checkbox) => {
+                            if (!(checkbox instanceof HTMLInputElement)) {
+                                return;
+                            }
+
+                            checkbox.checked = selectAllCheckbox.checked;
+
+                            if (selectAllCheckbox.checked) {
+                                selectedLeadIds.add(checkbox.value);
+                            } else {
+                                selectedLeadIds.delete(checkbox.value);
+                            }
+                        });
+                    }
+
+                    syncSelectionState();
+
+                    return;
+                }
+
                 const select = event.target.closest('[data-lead-owner-select]');
                 if (!select) {
                     const quickSelect = event.target.closest('[data-lead-quick-select]');

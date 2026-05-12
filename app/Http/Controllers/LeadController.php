@@ -12,6 +12,7 @@ use App\Support\LeadAssignmentNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -203,6 +204,71 @@ class LeadController extends Controller
         }
 
         return back()->with('success', 'שיוך הליד עודכן בהצלחה.');
+    }
+
+    public function bulkAssign(Request $request)
+    {
+        $this->requireAdmin();
+
+        $userIds = User::query()
+            ->pluck('id')
+            ->map(fn (int $id) => (string) $id)
+            ->all();
+
+        $data = $request->validate([
+            'lead_ids' => ['required', 'array', 'min:1'],
+            'lead_ids.*' => ['required', 'integer', 'distinct', 'exists:leads,id'],
+            'owner_id' => ['required', Rule::in(array_merge(['unassigned'], $userIds))],
+        ]);
+
+        $leadIds = collect($data['lead_ids'])
+            ->map(fn (int|string $id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $ownerId = $data['owner_id'] === 'unassigned'
+            ? null
+            : (int) $data['owner_id'];
+
+        $ownerName = $ownerId
+            ? User::query()->whereKey($ownerId)->value('name')
+            : 'ללא שיוך';
+
+        DB::transaction(function () use ($leadIds, $ownerId) {
+            Lead::query()
+                ->whereKey($leadIds->all())
+                ->get()
+                ->each(function (Lead $lead) use ($ownerId) {
+                    $previousOwnerId = $lead->owner_id;
+                    $previousScheduleSignature = $this->followUpSignature($lead);
+
+                    $lead->update([
+                        'owner_id' => $ownerId,
+                    ]);
+                    $lead->load('owner');
+
+                    $this->syncFollowUpArtifacts($lead, $previousOwnerId, $previousScheduleSignature);
+                    $this->notifyLeadAssignment($lead, $previousOwnerId);
+                });
+        });
+
+        $message = sprintf(
+            'שיוך של %d לידים עודכן בהצלחה ל%s.',
+            $leadIds->count(),
+            $ownerName
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'lead_ids' => $leadIds->all(),
+                'owner_id' => $ownerId,
+                'owner_name' => $ownerName,
+                'count' => $leadIds->count(),
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function quickUpdate(Request $request, Lead $lead)
