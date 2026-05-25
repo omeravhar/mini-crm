@@ -130,8 +130,8 @@
                                 <div class="form-text">אם נקבע תאריך מעקב, יש לבחור גם שעה להזמנת היומן.</div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label" for="interested_in">במה התעניינ/ה?</label>
-                                <input class="form-control" id="interested_in" name="interested_in" value="{{ old('interested_in', $lead->interested_in) }}" placeholder="לדוגמה: מטבח חדש, דלתות פנים, ארונות אמבטיה">
+                                <label class="form-label" for="interested_in">במה התעניין/ה?</label>
+                                <input class="form-control" id="interested_in" name="interested_in" value="{{ old('interested_in', $lead->interested_in) }}" placeholder='לדוגמה: מטבח חדש, דלתות פנים, ארונות אמבטיה'>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label" for="lead_type">סוג ליד</label>
@@ -144,6 +144,11 @@
                             <div class="col-md-4">
                                 <label class="form-label" for="external_campaign_name">שם הקמפיין</label>
                                 <input class="form-control" id="external_campaign_name" name="external_campaign_name" value="{{ old('external_campaign_name', $lead->external_campaign_name) }}" placeholder="לדוגמה: Spring Sale / Meta April">
+                            </div>
+                            <div class="col-12" data-archive-reason-wrapper @if (old('status', $lead->status) !== 'lost') hidden @endif>
+                                <label class="form-label" for="archive_reason">סיבה לארכוב / לא רלוונטי</label>
+                                <textarea class="form-control" id="archive_reason" name="archive_reason" rows="3" data-archive-reason-input>{{ old('archive_reason', $lead->archive_reason) }}</textarea>
+                                <div class="form-text">חובה כשמסמנים את הליד כ"אבוד / לא רלוונטי".</div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="tags_text">תגיות</label>
@@ -241,6 +246,20 @@
                     </div>
                 </div>
 
+                @if ($lead->archived_at)
+                    <div class="card shadow-sm border-0 mt-4">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3">פרטי ארכוב</h2>
+                            <div class="small text-muted mb-2">הליד נמצא כרגע בארכיון ויחזור לרשימות הפעילות אם תשנה אותו לסטטוס פתוח.</div>
+                            <div class="d-grid gap-2 small">
+                                <div><strong>תאריך ארכוב:</strong> {{ $lead->formatted_archived_at ?: 'לא זמין' }}</div>
+                                <div><strong>הועבר על ידי:</strong> {{ $lead->archiver?->name ?: 'לא ידוע' }}</div>
+                                <div><strong>סיבה:</strong> {{ $lead->archive_reason ?: 'ללא סיבה שמורה' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="d-flex gap-2 mt-4">
                     <button class="btn btn-primary flex-fill" type="submit">{{ $isEditing ? 'עדכון ליד' : 'שמירת ליד' }}</button>
                     @if (! $isEditing)
@@ -251,3 +270,31 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+    <script>
+        (() => {
+            const statusSelect = document.getElementById('status');
+            const archiveReasonWrapper = document.querySelector('[data-archive-reason-wrapper]');
+            const archiveReasonInput = document.querySelector('[data-archive-reason-input]');
+
+            if (!statusSelect || !archiveReasonWrapper || !archiveReasonInput) {
+                return;
+            }
+
+            const syncArchiveReasonVisibility = () => {
+                const requiresReason = statusSelect.value === 'lost';
+
+                archiveReasonWrapper.hidden = !requiresReason;
+                archiveReasonInput.required = requiresReason;
+
+                if (!requiresReason) {
+                    archiveReasonInput.value = '';
+                }
+            };
+
+            syncArchiveReasonVisibility();
+            statusSelect.addEventListener('change', syncArchiveReasonVisibility);
+        })();
+    </script>
+@endpush

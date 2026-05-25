@@ -50,6 +50,9 @@ class Lead extends Model
         'visibility',
         'converted_to_customer_at',
         'closed_at',
+        'archived_at',
+        'archived_by',
+        'archive_reason',
         'received_at',
     ];
 
@@ -62,6 +65,7 @@ class Lead extends Model
             'raw_payload' => 'array',
             'converted_to_customer_at' => 'datetime',
             'closed_at' => 'datetime',
+            'archived_at' => 'datetime',
             'received_at' => 'datetime',
         ];
     }
@@ -74,6 +78,11 @@ class Lead extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function archiver()
+    {
+        return $this->belongsTo(User::class, 'archived_by');
     }
 
     public function customer()
@@ -136,6 +145,11 @@ class Lead extends Model
     public function getFormattedEntryAtAttribute(): ?string
     {
         return $this->entry_at?->format('Y-m-d H:i');
+    }
+
+    public function getFormattedArchivedAtAttribute(): ?string
+    {
+        return $this->archived_at?->timezone(self::ENTRY_TIMEZONE)->format('Y-m-d H:i');
     }
 
     public function getCampaignDisplayAttribute(): ?string

@@ -31,6 +31,7 @@ Route::post('/logout', [AuthSessionController::class, 'logout'])->middleware('au
 Route::middleware('auth')->group(function () {
     Route::get('/main', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/myLeads', [LeadController::class, 'myLeads'])->name('leads.my');
+    Route::get('/leads/archive', [LeadController::class, 'archive'])->name('leads.archive');
     Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
     Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
     Route::post('/leads/{lead}/quick-update', [LeadController::class, 'quickUpdate'])->name('leads.quick-update');
@@ -49,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/newLead', [LeadController::class, 'create'])->name('leads.create');
         Route::post('/newLead', [LeadController::class, 'store'])->name('saveNewLead');
         Route::get('/showAllLeads', [LeadController::class, 'index'])->name('leads.index');
+        Route::get('/leads/archive', [LeadController::class, 'archive'])->name('leads.archive');
         Route::post('/leads/bulk-assign', [LeadController::class, 'bulkAssign'])->name('leads.bulk-assign');
         Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
         Route::get('/lead-statuses', [LeadStatusController::class, 'index'])->name('lead-statuses.index');

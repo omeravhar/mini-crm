@@ -203,4 +203,33 @@ class AuthActivityLogTest extends TestCase
             ->assertSee('dana@example.com')
             ->assertSee('סיסמה שגויה');
     }
+
+    public function test_auth_activity_dashboard_uses_bootstrap_pagination_markup(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create([
+            'role' => 'editor',
+            'name' => 'Paged User',
+            'email' => 'paged@example.com',
+        ]);
+
+        foreach (range(1, 51) as $index) {
+            AuthActivityLog::create([
+                'user_id' => $user->id,
+                'event_type' => AuthActivityLog::LOGIN_SUCCESS,
+                'status' => AuthActivityLog::STATUS_SUCCESS,
+                'email' => $user->email,
+                'ip_address' => '192.168.10.' . ($index % 255),
+                'user_agent' => 'Pagination Test Browser',
+                'occurred_at' => now()->subMinutes($index),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('admin.auth-activity.index'))
+            ->assertOk()
+            ->assertSee('class="pagination"', false)
+            ->assertSee('class="page-link"', false)
+            ->assertDontSee('w-5 h-5', false);
+    }
 }

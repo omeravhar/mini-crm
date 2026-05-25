@@ -12,14 +12,7 @@
         + ($showInterestedInColumn ? 1 : 0)
         + ($showCustomerColumn ? 1 : 0);
     $statusLabels = $statusLabels ?? \App\Models\LeadStatus::labels();
-    $statusSelectClasses = [
-        'new' => 'lead-status-select--new',
-        'contacted' => 'lead-status-select--contacted',
-        'qualified' => 'lead-status-select--qualified',
-        'proposal' => 'lead-status-select--proposal',
-        'won' => 'lead-status-select--won',
-        'lost' => 'lead-status-select--lost',
-    ];
+    $statusSelectClasses = $statusSelectClasses ?? \App\Models\LeadStatus::selectThemeClasses();
     $priorityLabels = [
         'low' => 'נמוכה',
         'medium' => 'בינונית',
@@ -125,12 +118,18 @@
                                 class="form-select form-select-sm lead-compact-select lead-status-select {{ $statusSelectClasses[$lead->status] ?? 'lead-status-select--default' }}"
                                 data-lead-quick-select
                                 data-lead-status-select
+                                data-previous-value="{{ $lead->status }}"
+                                data-current-archive-reason="{{ $lead->archive_reason ?? '' }}"
                             >
                                 @if ($lead->status && ! array_key_exists($lead->status, $statusLabels))
-                                    <option value="{{ $lead->status }}" selected>{{ $lead->status }}</option>
+                                    <option value="{{ $lead->status }}" selected data-status-theme="lead-status-select--default">{{ $lead->status }}</option>
                                 @endif
                                 @foreach ($statusLabels as $statusValue => $statusLabel)
-                                    <option value="{{ $statusValue }}" @selected($lead->status === $statusValue)>{{ $statusLabel }}</option>
+                                    <option
+                                        value="{{ $statusValue }}"
+                                        data-status-theme="{{ $statusSelectClasses[$statusValue] ?? 'lead-status-select--default' }}"
+                                        @selected($lead->status === $statusValue)
+                                    >{{ $statusLabel }}</option>
                                 @endforeach
                             </select>
                         </form>
@@ -156,18 +155,18 @@
                         </td>
                     @endif
                     <td class="text-end lead-actions-cell">
-                        <div class="d-inline-flex lead-actions-group">
-                            <a class="btn btn-sm btn-outline-primary" href="{{ route('leads.edit', $lead) }}">עריכה</a>
+                        <div class="icon-action-group lead-actions-group">
+                            <a class="btn btn-sm btn-outline-primary" href="{{ route('leads.edit', $lead) }}" title="עריכה" aria-label="עריכה"><i class="bi bi-pencil-square icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">עריכה</span></a>
                             @if (! $lead->customer)
                                 <form method="POST" action="{{ route('leads.convert', $lead) }}">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-success">המרה ללקוח</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="המרה ללקוח" aria-label="המרה ללקוח"><i class="bi bi-person-check icon-action-icon icon-action-icon--success" aria-hidden="true"></i><span class="visually-hidden">המרה ללקוח</span></button>
                                 </form>
                             @endif
                             <form method="POST" action="{{ route('leads.destroy', $lead) }}" onsubmit="return confirm('למחוק את הליד הזה?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">מחיקה</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="מחיקה" aria-label="מחיקה"><i class="bi bi-trash3 icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">מחיקה</span></button>
                             </form>
                         </div>
                     </td>
@@ -221,12 +220,18 @@
                                 class="form-select form-select-sm lead-status-select {{ $statusSelectClasses[$lead->status] ?? 'lead-status-select--default' }}"
                                 data-lead-quick-select
                                 data-lead-status-select
+                                data-previous-value="{{ $lead->status }}"
+                                data-current-archive-reason="{{ $lead->archive_reason ?? '' }}"
                             >
                                 @if ($lead->status && ! array_key_exists($lead->status, $statusLabels))
-                                    <option value="{{ $lead->status }}" selected>{{ $lead->status }}</option>
+                                    <option value="{{ $lead->status }}" selected data-status-theme="lead-status-select--default">{{ $lead->status }}</option>
                                 @endif
                                 @foreach ($statusLabels as $statusValue => $statusLabel)
-                                    <option value="{{ $statusValue }}" @selected($lead->status === $statusValue)>{{ $statusLabel }}</option>
+                                    <option
+                                        value="{{ $statusValue }}"
+                                        data-status-theme="{{ $statusSelectClasses[$statusValue] ?? 'lead-status-select--default' }}"
+                                        @selected($lead->status === $statusValue)
+                                    >{{ $statusLabel }}</option>
                                 @endforeach
                             </select>
                         </form>
@@ -301,18 +306,18 @@
                     </div>
                 </div>
 
-                <div class="d-grid gap-2">
-                    <a class="btn btn-outline-primary" href="{{ route('leads.edit', $lead) }}">עריכה</a>
+                <div class="icon-action-group table-action-group--mobile">
+                    <a class="btn btn-outline-primary" href="{{ route('leads.edit', $lead) }}" title="עריכה" aria-label="עריכה"><i class="bi bi-pencil-square icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">עריכה</span></a>
                     @if (! $lead->customer)
                         <form method="POST" action="{{ route('leads.convert', $lead) }}">
                             @csrf
-                            <button type="submit" class="btn btn-outline-success w-100">המרה ללקוח</button>
+                            <button type="submit" class="btn btn-outline-success w-100" title="המרה ללקוח" aria-label="המרה ללקוח"><i class="bi bi-person-check icon-action-icon icon-action-icon--success" aria-hidden="true"></i><span class="visually-hidden">המרה ללקוח</span></button>
                         </form>
                     @endif
                     <form method="POST" action="{{ route('leads.destroy', $lead) }}" onsubmit="return confirm('למחוק את הליד הזה?');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-outline-danger w-100">מחיקה</button>
+                        <button type="submit" class="btn btn-outline-danger w-100" title="מחיקה" aria-label="מחיקה"><i class="bi bi-trash3 icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">מחיקה</span></button>
                     </form>
                 </div>
             </div>

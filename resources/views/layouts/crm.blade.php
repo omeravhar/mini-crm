@@ -38,13 +38,15 @@
         }
         .app-brand__logo {
             flex: 0 0 auto;
-            width: 2.35rem;
             height: 2.35rem;
+            width: auto;
+            max-width: min(44vw, 16rem);
             object-fit: contain;
         }
         .offcanvas-title.app-brand .app-brand__logo {
-            width: 2.15rem;
             height: 2.15rem;
+            width: auto;
+            max-width: min(58vw, 14rem);
         }
         .app-brand__name {
             flex: 0 0 auto;
@@ -159,6 +161,134 @@
             flex-wrap: wrap;
             gap: 0.35rem;
         }
+        .table-action-group {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+        .table-action-group--mobile {
+            width: 100%;
+            justify-content: flex-start;
+        }
+        .icon-action-group {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+        .icon-action-group form {
+            margin: 0;
+        }
+        .icon-action-group .btn-outline-primary,
+        .icon-action-group .btn-outline-danger,
+        .icon-action-group .btn-outline-success {
+            width: 2.15rem;
+            height: 2.15rem;
+            padding: 0 !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: visible;
+            white-space: nowrap;
+            font-size: 1rem;
+            line-height: 1;
+            border-radius: 0.7rem;
+            background-color: #fff;
+            box-shadow: none;
+            transition: border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+        }
+        .icon-action-group .btn-outline-primary.w-100,
+        .icon-action-group .btn-outline-danger.w-100,
+        .icon-action-group .btn-outline-success.w-100 {
+            width: 2.15rem !important;
+        }
+        .icon-action-group .btn-outline-primary {
+            color: #2563eb;
+            border-color: #bfdbfe;
+        }
+        .icon-action-group .btn-outline-danger {
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+        .icon-action-group .btn-outline-success {
+            color: #059669;
+            border-color: #bbf7d0;
+        }
+        .icon-action-group .btn-outline-primary:hover,
+        .icon-action-group .btn-outline-danger:hover,
+        .icon-action-group .btn-outline-success:hover {
+            background-color: #f8fafc;
+        }
+        .icon-action-group .btn-outline-primary:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 6px 16px -14px rgba(15, 23, 42, 0.2);
+        }
+        .icon-action-group .btn-outline-danger:hover {
+            border-color: #fecaca;
+            box-shadow: 0 6px 16px -14px rgba(15, 23, 42, 0.2);
+        }
+        .icon-action-group .btn-outline-success:hover {
+            border-color: #bbf7d0;
+            box-shadow: 0 6px 16px -14px rgba(15, 23, 42, 0.2);
+        }
+        .icon-action-group .btn-outline-primary:disabled,
+        .icon-action-group .btn-outline-danger:disabled,
+        .icon-action-group .btn-outline-success:disabled {
+            opacity: 0.45;
+            box-shadow: none;
+        }
+        .icon-action-icon {
+            font-size: 1rem;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .icon-action-icon--success {
+            font-size: 1.08rem;
+        }
+        .icon-action-group .btn-outline-primary:focus-visible,
+        .icon-action-group .btn-outline-danger:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.18);
+            outline-offset: 2px;
+        }
+        .icon-action-group .btn-outline-success:focus-visible {
+            outline: 3px solid rgba(5, 150, 105, 0.18);
+            outline-offset: 2px;
+        }
+        .icon-action-group .btn-outline-primary::after,
+        .icon-action-group .btn-outline-danger::after,
+        .icon-action-group .btn-outline-success::after {
+            content: attr(aria-label);
+            position: absolute;
+            inset-inline-start: 50%;
+            top: calc(100% + 0.4rem);
+            transform: translateX(-50%);
+            padding: 0.24rem 0.48rem;
+            border-radius: 0.55rem;
+            background: rgba(15, 23, 42, 0.9);
+            color: #fff;
+            font-size: 0.72rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            box-shadow: 0 8px 18px -18px rgba(15, 23, 42, 0.55);
+            transition: opacity 0.12s ease, visibility 0.12s ease;
+            z-index: 20;
+        }
+        .icon-action-group .btn-outline-primary:hover::after,
+        .icon-action-group .btn-outline-primary:focus-visible::after,
+        .icon-action-group .btn-outline-danger:hover::after,
+        .icon-action-group .btn-outline-danger:focus-visible::after,
+        .icon-action-group .btn-outline-success:hover::after,
+        .icon-action-group .btn-outline-success:focus-visible::after {
+            opacity: 1;
+            visibility: visible;
+        }
         .lead-actions-cell .btn {
             padding: 0.2rem 0.55rem;
             font-size: 0.76rem;
@@ -172,35 +302,46 @@
             color: #0f172a;
             background: #fff;
         }
-        .lead-status-select--new {
-            background: #eef2ff;
-            border-color: #c7d2fe;
-            color: #3730a3;
+        .lead-status-select--new,
+        .lead-status-select--secondary {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #475569;
         }
-        .lead-status-select--contacted {
+        .lead-status-select--contacted,
+        .lead-status-select--primary {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+        .lead-status-select--qualified,
+        .lead-status-select--info {
             background: #e0f2fe;
             border-color: #7dd3fc;
-            color: #075985;
+            color: #0369a1;
         }
-        .lead-status-select--qualified {
-            background: #ecfdf5;
+        .lead-status-select--proposal,
+        .lead-status-select--warning {
+            background: #fef3c7;
+            border-color: #fcd34d;
+            color: #92400e;
+        }
+        .lead-status-select--won,
+        .lead-status-select--success {
+            background: #dcfce7;
             border-color: #86efac;
             color: #166534;
         }
-        .lead-status-select--proposal {
-            background: #fffbeb;
-            border-color: #fcd34d;
-            color: #b45309;
-        }
-        .lead-status-select--won {
-            background: #dcfce7;
-            border-color: #4ade80;
-            color: #166534;
-        }
-        .lead-status-select--lost {
-            background: #fef2f2;
+        .lead-status-select--lost,
+        .lead-status-select--danger {
+            background: #fee2e2;
             border-color: #fca5a5;
             color: #b91c1c;
+        }
+        .lead-status-select--dark {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+            color: #0f172a;
         }
         .lead-status-select--default {
             background: #f8fafc;
@@ -350,7 +491,7 @@
     @php
         $appName = config('app.name', 'EasyCRM');
         $appSlogan = config('app.slogan', 'Exactly What You Need');
-        $appLogoMark = asset('assets/img/easycrm-mark.svg');
+        $appLogo = asset('assets/img/easycrm-logo.svg');
         $roleLabels = [
             'admin' => 'מנהל',
             'editor' => 'עורך',
@@ -359,7 +500,7 @@
     @endphp
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div class="container-fluid gap-2">
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 order-2">
                 <button
                     class="btn btn-outline-light d-lg-none"
                     type="button"
@@ -369,14 +510,12 @@
                 >
                     <i class="bi bi-list fs-5"></i>
                 </button>
-                <a class="navbar-brand app-brand fw-semibold mb-0" href="{{ route('dashboard') }}">
-                    <img class="app-brand__logo" src="{{ $appLogoMark }}" alt="" aria-hidden="true">
-                    <span class="app-brand__name">{{ $appName }}</span>
-                    <span class="app-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
+                <a class="navbar-brand app-brand fw-semibold mb-0" href="{{ route('dashboard') }}" aria-label="{{ $appName }}">
+                    <img class="app-brand__logo" src="{{ $appLogo }}" alt="{{ $appName }}">
                 </a>
             </div>
-            <div class="d-flex align-items-center gap-2 gap-lg-3 text-white navbar-user">
-                <div class="small text-start">
+            <div class="d-flex align-items-center gap-2 gap-lg-3 text-white navbar-user order-1">
+                <div class="small text-end">
                     <div>{{ auth()->user()->name }}</div>
                     <div class="text-white-50">{{ $roleLabels[auth()->user()->role] ?? auth()->user()->role }}</div>
                 </div>
@@ -390,10 +529,8 @@
 
     <div class="offcanvas offcanvas-start mobile-sidebar d-lg-none" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
         <div class="offcanvas-header border-bottom">
-            <h5 class="offcanvas-title app-brand app-brand--dark" id="mobileSidebarLabel">
-                <img class="app-brand__logo" src="{{ $appLogoMark }}" alt="" aria-hidden="true">
-                <span class="app-brand__name">{{ $appName }}</span>
-                <span class="app-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
+            <h5 class="offcanvas-title app-brand app-brand--dark mb-0" id="mobileSidebarLabel">
+                <img class="app-brand__logo" src="{{ $appLogo }}" alt="{{ $appName }}">
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
@@ -466,6 +603,13 @@
                 'lead-status-select--proposal',
                 'lead-status-select--won',
                 'lead-status-select--lost',
+                'lead-status-select--secondary',
+                'lead-status-select--primary',
+                'lead-status-select--info',
+                'lead-status-select--warning',
+                'lead-status-select--success',
+                'lead-status-select--danger',
+                'lead-status-select--dark',
                 'lead-status-select--default',
             ];
 
@@ -478,10 +622,13 @@
                     select.classList.remove(className);
                 });
 
+                const optionThemeClass = select.selectedOptions?.[0]?.dataset.statusTheme?.trim();
                 const normalizedValue = (select.value || '').toLowerCase().trim();
-                const themeClass = themeClasses.includes(`lead-status-select--${normalizedValue}`)
-                    ? `lead-status-select--${normalizedValue}`
-                    : 'lead-status-select--default';
+                const themeClass = optionThemeClass && optionThemeClass.startsWith('lead-status-select--')
+                    ? optionThemeClass
+                    : (themeClasses.includes(`lead-status-select--${normalizedValue}`)
+                        ? `lead-status-select--${normalizedValue}`
+                        : 'lead-status-select--default');
 
                 select.classList.add(themeClass);
             };

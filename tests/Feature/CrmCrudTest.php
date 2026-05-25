@@ -394,6 +394,95 @@ class CrmCrudTest extends TestCase
             ->assertSee('Ron Levi');
     }
 
+    public function test_admin_leads_index_uses_custom_status_theme_class_in_status_select(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        LeadStatus::create([
+            'slug' => 'waiting_for_quote',
+            'name' => 'Waiting for Quote',
+            'badge_class' => 'text-bg-warning',
+            'sort_order' => 70,
+            'is_system' => false,
+            'is_closed' => false,
+        ]);
+
+        Lead::create([
+            'first_name' => 'Tamar',
+            'last_name' => 'Offer',
+            'email' => 'tamar@example.com',
+            'owner_id' => null,
+            'created_by' => $admin->id,
+            'status' => 'waiting_for_quote',
+            'priority' => 'medium',
+            'follow_up' => '2026-04-10',
+            'follow_up_time' => '09:00',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.index'))
+            ->assertOk()
+            ->assertSee('lead-status-select--warning', false)
+            ->assertSee('data-status-theme="lead-status-select--warning"', false)
+            ->assertSee('Waiting for Quote');
+    }
+
+    public function test_admin_leads_index_shows_dashboard_style_total_leads_summary_card(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.index'))
+            ->assertOk()
+            ->assertSee('admin-leads-summary__card--leads', false)
+            ->assertSee('dashboard-stat-icon--leads', false)
+            ->assertSee('<svg viewBox="0 0 48 48">', false);
+    }
+
+    public function test_admin_leads_index_uses_children_filter_classes_and_active_filter_counter(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.index', [
+                'q' => 'רון',
+                'status' => '__open__',
+            ]))
+            ->assertOk()
+            ->assertSee('children-filters-card', false)
+            ->assertSee('children-filters-header', false)
+            ->assertSee('children-page-title-wrap', false)
+            ->assertSee('children-filters-grid', false)
+            ->assertSee('filter-col filter-col-search admin-leads-filter__search', false)
+            ->assertSee('filter-col filter-col-handler admin-leads-filter__select', false)
+            ->assertSee('children-filters-footer', false)
+            ->assertSee('active-filters-box', false)
+            ->assertSee('<span class="active-filters-count" data-active-filters-count>2</span>', false);
+    }
+
+    public function test_my_leads_uses_children_filter_layout_and_shared_panel_theme(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+
+        $this->actingAs($owner)
+            ->get(route('leads.my', [
+                'q' => 'רון',
+                'status' => '__open__',
+            ]))
+            ->assertOk()
+            ->assertSee('children-filters-card', false)
+            ->assertSee('children-filters-header', false)
+            ->assertSee('children-filters-grid', false)
+            ->assertSee('filter-col filter-col-followup admin-leads-filter__select', false)
+            ->assertSee('children-filters-footer', false)
+            ->assertSee('active-filters-box', false)
+            ->assertSee('<span class="active-filters-count" data-active-filters-count>2</span>', false)
+            ->assertSee('admin-leads-panel', false);
+    }
+
     public function test_assign_endpoint_returns_json_for_live_updates(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -601,6 +690,7 @@ class CrmCrudTest extends TestCase
                     'status' => 'won',
                     'priority' => 'high',
                     'closed_at' => '2026-04-18 13:15',
+                    'archived_at' => '2026-04-18 13:15',
                 ]);
 
             $lead->refresh();
@@ -608,6 +698,58 @@ class CrmCrudTest extends TestCase
             $this->assertSame('won', $lead->status);
             $this->assertSame('high', $lead->priority);
             $this->assertSame('2026-04-18 13:15', $lead->closed_at?->format('Y-m-d H:i'));
+            $this->assertSame('2026-04-18 13:15', $lead->archived_at?->format('Y-m-d H:i'));
+            $this->assertSame($user->id, $lead->archived_by);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_lost_status_requires_reason_and_moves_lead_to_archive(): void
+    {
+        Carbon::setTestNow('2026-04-18 14:30:00');
+
+        try {
+            $user = User::factory()->create(['role' => 'editor']);
+            $lead = Lead::create([
+                'first_name' => 'Archive',
+                'last_name' => 'Reason',
+                'email' => 'archive-reason@example.com',
+                'owner_id' => $user->id,
+                'created_by' => $user->id,
+                'status' => 'proposal',
+                'priority' => 'medium',
+                'pipeline' => 'default',
+                'stage' => 'negotiation',
+                'visibility' => 'team',
+            ]);
+
+            $this->actingAs($user)
+                ->postJson(route('leads.quick-update', $lead), [
+                    'status' => 'lost',
+                ])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('archive_reason');
+
+            $this->actingAs($user)
+                ->postJson(route('leads.quick-update', $lead), [
+                    'status' => 'lost',
+                    'archive_reason' => 'Duplicate inquiry',
+                ])
+                ->assertOk()
+                ->assertJsonFragment([
+                    'lead_id' => $lead->id,
+                    'status' => 'lost',
+                    'archived_at' => '2026-04-18 14:30',
+                ]);
+
+            $lead->refresh();
+
+            $this->assertSame('lost', $lead->status);
+            $this->assertSame('Duplicate inquiry', $lead->archive_reason);
+            $this->assertSame('2026-04-18 14:30', $lead->closed_at?->format('Y-m-d H:i'));
+            $this->assertSame('2026-04-18 14:30', $lead->archived_at?->format('Y-m-d H:i'));
+            $this->assertSame($user->id, $lead->archived_by);
         } finally {
             Carbon::setTestNow();
         }
@@ -809,7 +951,6 @@ class CrmCrudTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Shira Gold')
-            ->assertSee('Kitchen package')
             ->assertSee('2026-04-15 11:30')
             ->assertSee('חוזר')
             ->assertDontSee('Avi Mizrahi');
@@ -945,9 +1086,201 @@ class CrmCrudTest extends TestCase
             $this->assertSame('won', $lead->status);
             $this->assertNotNull($lead->closed_at);
             $this->assertSame('2026-04-18 13:15', $lead->closed_at?->format('Y-m-d H:i'));
+            $this->assertSame('2026-04-18 13:15', $lead->archived_at?->format('Y-m-d H:i'));
+            $this->assertSame($admin->id, $lead->archived_by);
         } finally {
             Carbon::setTestNow();
         }
+    }
+
+    public function test_archived_leads_are_hidden_from_active_lists_and_shown_in_archive(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'name' => 'Archive Admin']);
+        $owner = User::factory()->create(['role' => 'editor', 'name' => 'Archive Owner']);
+
+        Lead::create([
+            'first_name' => 'Active',
+            'last_name' => 'Lead',
+            'email' => 'active-lead@example.com',
+            'owner_id' => $owner->id,
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Archived',
+            'last_name' => 'Lead',
+            'email' => 'archived-lead@example.com',
+            'owner_id' => $owner->id,
+            'created_by' => $admin->id,
+            'status' => 'lost',
+            'priority' => 'high',
+            'archive_reason' => 'No longer relevant',
+            'closed_at' => '2026-04-20 10:15:00',
+            'archived_at' => '2026-04-20 10:15:00',
+            'archived_by' => $admin->id,
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.index'))
+            ->assertOk()
+            ->assertSee('Active Lead')
+            ->assertDontSee('Archived Lead');
+
+        $this->actingAs($owner)
+            ->get(route('leads.my'))
+            ->assertOk()
+            ->assertSee('Active Lead')
+            ->assertDontSee('Archived Lead');
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.archive'))
+            ->assertOk()
+            ->assertSee('Archived Lead')
+            ->assertSee('Archive Admin')
+            ->assertSee('No longer relevant')
+            ->assertDontSee('Active Lead');
+    }
+
+    public function test_non_admin_can_view_all_archived_leads(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'name' => 'Archive Admin']);
+        $member = User::factory()->create(['role' => 'editor', 'name' => 'Archive Member']);
+        $other = User::factory()->create(['role' => 'editor', 'name' => 'Other User']);
+
+        Lead::create([
+            'first_name' => 'Owned',
+            'last_name' => 'Archived',
+            'email' => 'owned-archived@example.com',
+            'owner_id' => $member->id,
+            'created_by' => $admin->id,
+            'status' => 'lost',
+            'priority' => 'medium',
+            'archive_reason' => 'Owned by member',
+            'closed_at' => '2026-04-20 10:15:00',
+            'archived_at' => '2026-04-20 10:15:00',
+            'archived_by' => $admin->id,
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Created',
+            'last_name' => 'Archived',
+            'email' => 'created-archived@example.com',
+            'owner_id' => $other->id,
+            'created_by' => $member->id,
+            'status' => 'lost',
+            'priority' => 'high',
+            'archive_reason' => 'Created by member',
+            'closed_at' => '2026-04-21 11:30:00',
+            'archived_at' => '2026-04-21 11:30:00',
+            'archived_by' => $admin->id,
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Hidden',
+            'last_name' => 'Archived',
+            'email' => 'hidden-archived@example.com',
+            'owner_id' => $other->id,
+            'created_by' => $admin->id,
+            'status' => 'lost',
+            'priority' => 'low',
+            'archive_reason' => 'Should stay hidden',
+            'closed_at' => '2026-04-22 09:45:00',
+            'archived_at' => '2026-04-22 09:45:00',
+            'archived_by' => $admin->id,
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('leads.archive'))
+            ->assertOk()
+            ->assertSee('Owned Archived')
+            ->assertSee('Created Archived')
+            ->assertSee('Hidden Archived');
+    }
+
+    public function test_reopening_an_archived_lead_clears_archive_fields(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create(['role' => 'editor']);
+        $lead = Lead::create([
+            'first_name' => 'Reopen',
+            'last_name' => 'Lead',
+            'email' => 'reopen-lead@example.com',
+            'phone' => '0508889999',
+            'company' => 'Archive Co',
+            'job_title' => 'Owner',
+            'source' => 'website',
+            'owner_id' => $owner->id,
+            'created_by' => $admin->id,
+            'status' => 'lost',
+            'priority' => 'high',
+            'interested_in' => 'Kitchen',
+            'archive_reason' => 'Old deal',
+            'closed_at' => '2026-04-18 09:30:00',
+            'archived_at' => '2026-04-18 09:30:00',
+            'archived_by' => $admin->id,
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('leads.update', $lead), [
+                'first_name' => 'Reopen',
+                'last_name' => 'Lead',
+                'email' => 'reopen-lead@example.com',
+                'phone' => '0508889999',
+                'company' => 'Archive Co',
+                'job_title' => 'Owner',
+                'source' => 'website',
+                'status' => 'contacted',
+                'priority' => 'medium',
+                'expected_value' => 1200,
+                'interested_in' => 'Kitchen',
+                'archive_reason' => '',
+                'follow_up' => null,
+                'follow_up_time' => null,
+                'tags_text' => 'return',
+                'street' => '1 Main St',
+                'city' => 'Tel Aviv',
+                'zip' => '61000',
+                'country' => 'Israel',
+                'notes' => 'Back to pipeline',
+                'owner_id' => $owner->id,
+                'pipeline' => 'default',
+                'stage' => 'lead',
+                'visibility' => 'team',
+            ])
+            ->assertRedirect(route('admin.leads.index'));
+
+        $lead->refresh();
+
+        $this->assertSame('contacted', $lead->status);
+        $this->assertNull($lead->closed_at);
+        $this->assertNull($lead->archived_at);
+        $this->assertNull($lead->archived_by);
+        $this->assertNull($lead->archive_reason);
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.index'))
+            ->assertOk()
+            ->assertSee('Reopen Lead');
     }
 
     public function test_admin_can_view_analytics_dashboard_with_date_filters(): void
@@ -1070,5 +1403,67 @@ class CrmCrudTest extends TestCase
             ->assertOk()
             ->assertSee('לא נוצר קשר')
             ->assertViewHas('stats', fn (array $stats) => ($stats['uncontacted_leads'] ?? null) === 2);
+    }
+    public function test_dashboard_stat_cards_link_to_relevant_filtered_pages(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Lead::create([
+            'first_name' => 'Open',
+            'last_name' => 'Lead',
+            'email' => 'open-dashboard@example.com',
+            'created_by' => $admin->id,
+            'status' => 'contacted',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'New',
+            'last_name' => 'Lead',
+            'email' => 'new-dashboard@example.com',
+            'created_by' => $admin->id,
+            'status' => 'new',
+            'priority' => 'medium',
+            'pipeline' => 'default',
+            'stage' => 'lead',
+            'visibility' => 'team',
+        ]);
+
+        Lead::create([
+            'first_name' => 'Archived',
+            'last_name' => 'Lead',
+            'email' => 'archived-dashboard@example.com',
+            'created_by' => $admin->id,
+            'status' => 'won',
+            'priority' => 'high',
+            'closed_at' => '2026-04-18 09:30:00',
+            'archived_at' => '2026-04-18 09:30:00',
+            'archived_by' => $admin->id,
+            'pipeline' => 'default',
+            'stage' => 'won',
+            'visibility' => 'team',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee(route('admin.leads.index'), false)
+            ->assertSee(route('admin.leads.index', ['status' => '__open__']), false)
+            ->assertSee(route('admin.leads.index', ['status' => 'new']), false)
+            ->assertSee(route('customers.index'), false)
+            ->assertSee(route('admin.users.index'), false)
+            ->assertViewHas('stats', fn (array $stats) => ($stats['leads'] ?? null) === 2)
+            ->assertViewHas('stats', fn (array $stats) => ($stats['open_leads'] ?? null) === 2)
+            ->assertViewHas('stats', fn (array $stats) => ($stats['uncontacted_leads'] ?? null) === 1);
+
+        $this->actingAs($admin)
+            ->get(route('admin.leads.index', ['status' => '__open__']))
+            ->assertOk()
+            ->assertSee('Open Lead')
+            ->assertSee('New Lead')
+            ->assertDontSee('Archived Lead');
     }
 }

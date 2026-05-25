@@ -11,6 +11,18 @@
             border-radius: 20px;
         }
 
+        .dashboard-stat-link {
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .dashboard-stat-link:hover,
+        .dashboard-stat-link:focus-visible {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+            outline: none;
+        }
+
         .dashboard-stat-card {
             display: flex;
             align-items: center;
@@ -148,34 +160,13 @@
         }
 
         .dashboard-section-icon {
-            position: relative;
-            isolation: isolate;
             flex: 0 0 auto;
-            width: 3.75rem;
-            aspect-ratio: 1;
             display: grid;
             place-items: center;
-            border-radius: 999px;
+            width: auto;
+            min-width: 0;
+            line-height: 0;
             color: var(--section-accent);
-        }
-
-        .dashboard-section-icon::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 18%, rgba(248, 250, 252, 0.94) 100%);
-            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14), 0 12px 24px rgba(15, 23, 42, 0.08);
-            z-index: -2;
-        }
-
-        .dashboard-section-icon::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: radial-gradient(circle at 18% 78%, var(--section-glow) 0, transparent 45%);
-            z-index: -1;
         }
 
         .dashboard-section-icon svg {
@@ -207,10 +198,6 @@
                 padding: 0.9rem 1rem;
             }
 
-            .dashboard-section-icon {
-                width: 3.35rem;
-            }
-
             .dashboard-section-icon svg {
                 width: 1.8rem;
                 height: 1.8rem;
@@ -220,7 +207,7 @@
 
     <div class="row g-4 mb-4 dashboard-stats">
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card card-stat card-leads h-100">
+            <div class="card card-stat card-leads h-100 dashboard-stat-link" data-dashboard-target="{{ $leadIndexRoute }}" role="link" tabindex="0">
                 <div class="card-body dashboard-stat-card">
                     <div class="dashboard-stat-card__content">
                         <div class="text-muted small dashboard-stat-card__label">סה"כ לידים</div>
@@ -240,7 +227,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card card-stat card-open h-100">
+            <div class="card card-stat card-open h-100 dashboard-stat-link" data-dashboard-target="{{ $openLeadIndexRoute }}" role="link" tabindex="0">
                 <div class="card-body dashboard-stat-card">
                     <div class="dashboard-stat-card__content">
                         <div class="text-muted small dashboard-stat-card__label">לידים פתוחים</div>
@@ -256,7 +243,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card card-stat card-pending h-100">
+            <div class="card card-stat card-pending h-100 dashboard-stat-link" data-dashboard-target="{{ $uncontactedLeadIndexRoute }}" role="link" tabindex="0">
                 <div class="card-body dashboard-stat-card">
                     <div class="dashboard-stat-card__content">
                         <div class="text-muted small dashboard-stat-card__label">לא נוצר קשר</div>
@@ -278,7 +265,7 @@
             </div>
         </div>
         <div class="col-xl col-lg-4 col-md-6">
-            <div class="card card-stat card-customers h-100">
+            <div class="card card-stat card-customers h-100 dashboard-stat-link" data-dashboard-target="{{ $customerIndexRoute }}" role="link" tabindex="0">
                 <div class="card-body dashboard-stat-card">
                     <div class="dashboard-stat-card__content">
                         <div class="text-muted small dashboard-stat-card__label">לקוחות</div>
@@ -297,7 +284,7 @@
         </div>
         @if (! is_null($stats['users']))
             <div class="col-xl col-lg-4 col-md-6">
-                <div class="card card-stat card-users h-100">
+                <div class="card card-stat card-users h-100 dashboard-stat-link" data-dashboard-target="{{ $usersIndexRoute }}" role="link" tabindex="0">
                     <div class="card-body dashboard-stat-card">
                         <div class="dashboard-stat-card__content">
                             <div class="text-muted small dashboard-stat-card__label">משתמשי EasyCRM</div>
@@ -496,3 +483,31 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (() => {
+            const statCards = document.querySelectorAll('[data-dashboard-target]');
+
+            statCards.forEach((card) => {
+                const navigate = () => {
+                    const target = card.getAttribute('data-dashboard-target');
+
+                    if (target) {
+                        window.location.href = target;
+                    }
+                };
+
+                card.addEventListener('click', navigate);
+                card.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    navigate();
+                });
+            });
+        })();
+    </script>
+@endpush

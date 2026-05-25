@@ -19,30 +19,15 @@
         }
         .login-logo {
             display: block;
-            width: min(290px, 100%);
+            width: min(420px, 100%);
             height: auto;
-            margin: 0 auto 1.5rem;
-        }
-        .login-brand {
-            display: inline-flex;
-            align-items: baseline;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            line-height: 1.1;
-        }
-        .login-brand__slogan {
-            color: #6c757d;
-            direction: ltr;
-            font-size: 0.78rem;
-            font-weight: 500;
-            unicode-bidi: isolate;
+            margin: 0 auto 1.25rem;
         }
     </style>
     @include('partials.global-css')
 </head>
 @php
     $appName = config('app.name', 'EasyCRM');
-    $appSlogan = config('app.slogan', 'Exactly What You Need');
     $appLogo = asset('assets/img/easycrm-logo.svg');
 @endphp
 <body class="d-flex align-items-center justify-content-center">
@@ -50,10 +35,6 @@
         <div class="card-body p-4 p-md-5">
             <img class="login-logo" src="{{ $appLogo }}" alt="{{ $appName }}">
             <div class="mb-4">
-                <div class="login-brand text-muted small fw-semibold">
-                    <span>{{ $appName }}</span>
-                    <span class="login-brand__slogan" dir="ltr">{{ $appSlogan }}</span>
-                </div>
                 <h1 class="h3 mb-1">התחברות</h1>
                 <p class="text-muted mb-0">הזן את פרטי הגישה שלך כדי להמשיך.</p>
             </div>

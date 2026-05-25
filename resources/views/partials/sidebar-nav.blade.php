@@ -8,6 +8,9 @@
     <a class="nav-link @if(request()->routeIs('customers.*')) active @endif" href="{{ route('customers.index') }}">
         <i class="bi bi-people me-2"></i>לקוחות
     </a>
+    <a class="nav-link @if(request()->routeIs('leads.archive') || request()->routeIs('admin.leads.archive')) active @endif" href="{{ route('leads.archive') }}">
+        <i class="bi bi-archive me-2"></i>ארכיון לידים
+    </a>
 
     @if (auth()->user()->isAdmin())
         <hr>

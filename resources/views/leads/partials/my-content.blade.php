@@ -1,4 +1,4 @@
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm border-0 admin-leads-panel">
     <div class="card-header bg-white">
         <div class="fw-semibold">לידים משויכים</div>
     </div>

@@ -41,13 +41,13 @@
                                 <td>{{ $userModel->owned_leads_count }}</td>
                                 <td>{{ $userModel->customers_count }}</td>
                                 <td class="text-end">
-                                    <div class="d-inline-flex gap-2">
-                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal{{ $userModel->id }}">עריכה</button>
+                                    <div class="icon-action-group">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal{{ $userModel->id }}" title="עריכה" aria-label="עריכה"><i class="bi bi-pencil-square icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">עריכה</span></button>
                                         @if (! auth()->user()->is($userModel))
                                             <form method="POST" action="{{ route('admin.users.destroy', $userModel) }}" onsubmit="return confirm('למחוק את המשתמש הזה?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-sm btn-outline-danger" type="submit">מחיקה</button>
+                                                <button class="btn btn-sm btn-outline-danger" type="submit" title="מחיקה" aria-label="מחיקה"><i class="bi bi-trash3 icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">מחיקה</span></button>
                                             </form>
                                         @endif
                                     </div>
@@ -107,13 +107,13 @@
                                 </div>
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal{{ $userModel->id }}">עריכה</button>
+                            <div class="icon-action-group table-action-group--mobile">
+                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal{{ $userModel->id }}" title="עריכה" aria-label="עריכה"><i class="bi bi-pencil-square icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">עריכה</span></button>
                                 @if (! auth()->user()->is($userModel))
                                     <form method="POST" action="{{ route('admin.users.destroy', $userModel) }}" onsubmit="return confirm('למחוק את המשתמש הזה?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-outline-danger w-100" type="submit">מחיקה</button>
+                                        <button class="btn btn-outline-danger w-100" type="submit" title="מחיקה" aria-label="מחיקה"><i class="bi bi-trash3 icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">מחיקה</span></button>
                                     </form>
                                 @endif
                             </div>

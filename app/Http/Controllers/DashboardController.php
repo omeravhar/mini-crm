@@ -16,9 +16,14 @@ class DashboardController extends Controller
         $user = $this->user();
         $now = now();
 
-        $leadScope = Lead::query()->with('owner');
+        $leadScope = Lead::query()
+            ->with('owner')
+            ->whereNull('archived_at');
         $customerScope = Customer::query()->with('owner');
         $closedStatuses = LeadStatus::closedValues();
+        $leadIndexRoute = $user?->isAdmin()
+            ? route('admin.leads.index')
+            : route('leads.my');
 
         if (! $user?->isAdmin()) {
             $leadScope->where(function ($query) use ($user) {
@@ -44,13 +49,18 @@ class DashboardController extends Controller
             ],
             'greeting' => $this->greetingPayload($now, $user?->name),
             'leadTrend' => $this->leadTrendPayload($leadScope, $now),
-            'leadIndexRoute' => $user?->isAdmin()
-                ? route('admin.leads.index')
-                : route('leads.my'),
+            'leadIndexRoute' => $leadIndexRoute,
+            'openLeadIndexRoute' => route($user?->isAdmin() ? 'admin.leads.index' : 'leads.my', [
+                'status' => '__open__',
+            ]),
+            'uncontactedLeadIndexRoute' => route($user?->isAdmin() ? 'admin.leads.index' : 'leads.my', [
+                'status' => 'new',
+            ]),
             'followUpRoute' => $user?->isAdmin()
                 ? route('admin.leads.index', ['follow_up_scope' => 'upcoming'])
                 : route('leads.my', ['follow_up_scope' => 'upcoming']),
             'customerIndexRoute' => route('customers.index'),
+            'usersIndexRoute' => $user?->isAdmin() ? route('admin.users.index') : null,
             'recentLeads' => $leadScope->latest()->take(6)->get(),
             'upcomingLeads' => (clone $leadScope)
                 ->whereDate('follow_up', '>=', now()->toDateString())

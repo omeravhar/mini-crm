@@ -321,6 +321,9 @@ class ProcessWebhookEvent implements ShouldQueue
             'external_lead_id' => $this->extractExternalLeadId($payload),
             'external_form_id' => $this->extractExternalFormId($payload),
             'external_campaign_id' => $this->extractExternalCampaignId($payload),
+            'external_campaign_name' => $this->stringValue(
+                data_get($payload, 'campaign_name', data_get($payload, 'campaign.name', data_get($payload, 'data.campaign_name')))
+            ),
             'external_ad_id' => $this->extractExternalAdId($payload),
             'source' => 'partner',
             'source_channel' => 'google_ads',
@@ -570,6 +573,10 @@ class ProcessWebhookEvent implements ShouldQueue
 
     private function resolveCampaignName(array $normalizedLead, array $payload): ?string
     {
+        $campaignId = $this->stringValue(
+            $normalizedLead['external_campaign_id'] ?? $this->extractExternalCampaignId($payload)
+        );
+
         foreach ([
             $normalizedLead['external_campaign_name'] ?? null,
             $normalizedLead['campaign_name'] ?? null,
@@ -581,12 +588,27 @@ class ProcessWebhookEvent implements ShouldQueue
             data_get($payload, 'data.campaign.name'),
             data_get($payload, 'entry.0.changes.0.value.campaign_name'),
         ] as $candidate) {
-            if (is_scalar($candidate) && trim((string) $candidate) !== '') {
-                return trim((string) $candidate);
+            $campaignName = $this->normalizeCampaignNameCandidate($candidate, $campaignId);
+
+            if ($campaignName !== null) {
+                return $campaignName;
             }
         }
 
         return null;
+    }
+
+    private function normalizeCampaignNameCandidate(mixed $candidate, ?string $campaignId): ?string
+    {
+        $campaignName = $this->stringValue($candidate);
+
+        if ($campaignName === null) {
+            return null;
+        }
+
+        return $campaignId !== null && $campaignName === $campaignId
+            ? null
+            : $campaignName;
     }
 
     private function resolveLeadType(array $normalizedLead, Lead $lead): string

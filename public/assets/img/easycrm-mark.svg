@@ -1,29 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 150" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
   <title id="title">EasyCRM mark</title>
-  <desc id="desc">A CRM dashboard icon with a user, growth bars, and a star.</desc>
+  <desc id="desc">Four-part circular EasyCRM symbol.</desc>
   <defs>
-    <linearGradient id="shell" x1="20" y1="16" x2="135" y2="138" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1d5fd1"/>
-      <stop offset="0.52" stop-color="#2ca8f5"/>
-      <stop offset="1" stop-color="#1955c8"/>
+    <linearGradient id="arcBlue" x1="92" y1="44" x2="32" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2587ff"/>
+      <stop offset="1" stop-color="#0b63eb"/>
     </linearGradient>
-    <linearGradient id="bars" x1="59" y1="112" x2="111" y2="62" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1d63d3"/>
-      <stop offset="0.5" stop-color="#20c7b4"/>
-      <stop offset="1" stop-color="#8be04c"/>
+    <linearGradient id="arcTeal" x1="166" y1="44" x2="222" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12c6ad"/>
+      <stop offset="1" stop-color="#09b99b"/>
     </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="145%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#0b2a66" flood-opacity=".18"/>
+    <linearGradient id="arcGray" x1="222" y1="152" x2="154" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d7e2ef"/>
+      <stop offset="1" stop-color="#b4c5dd"/>
+    </linearGradient>
+    <linearGradient id="arcNavy" x1="34" y1="150" x2="102" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0c1d57"/>
+      <stop offset="1" stop-color="#122c6a"/>
+    </linearGradient>
+    <filter id="softShadow" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#91a6c5" flood-opacity=".22"/>
     </filter>
   </defs>
-  <path d="M27 19h102c11 0 20 9 20 20v65c0 10-6 19-15 23l-48 20a24 24 0 0 1-19 0l-48-20C10 123 4 114 4 104V39c0-11 12-20 23-20Z" fill="url(#shell)" filter="url(#softShadow)"/>
-  <path d="M27 28h102c6 0 11 5 11 11v12H13V39c0-6 8-11 14-11Z" fill="#2a86e8"/>
-  <circle cx="34" cy="39" r="6" fill="#a9e64f"/>
-  <circle cx="52" cy="39" r="6" fill="#b9ee4e"/>
-  <circle cx="70" cy="39" r="6" fill="#72b8ef"/>
-  <path d="M13 55h127v49c0 6-4 12-10 14l-48 20a14 14 0 0 1-11 0l-48-20c-6-2-10-8-10-14V55Z" fill="#fff"/>
-  <circle cx="68" cy="74" r="17" fill="#1c67cf"/>
-  <path d="M33 117c4-24 18-36 39-36 13 0 23 5 30 15l-14 8c-4-5-9-7-16-7-12 0-20 6-24 20H33Z" fill="#1c67cf"/>
-  <path d="M66 112h13v24l-13 5v-29Zm21-17h13v33l-13 5V95Zm21-18h13v43l-13 5V77Z" fill="url(#bars)"/>
-  <path d="M122 61l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1 4-8Z" fill="#ffc443"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M112 36 A92 92 0 0 0 36 112" fill="none" stroke="url(#arcBlue)" stroke-width="30" stroke-linecap="round"/>
+    <path d="M144 36 A92 92 0 0 1 220 112" fill="none" stroke="url(#arcTeal)" stroke-width="30" stroke-linecap="round"/>
+    <path d="M220 144 A92 92 0 0 1 144 220" fill="none" stroke="url(#arcGray)" stroke-width="30" stroke-linecap="round"/>
+    <path d="M36 144 A92 92 0 0 0 112 220" fill="none" stroke="url(#arcNavy)" stroke-width="30" stroke-linecap="round"/>
+
+    <circle cx="94" cy="96" r="25" fill="#156ff5"/>
+    <circle cx="162" cy="96" r="25" fill="#08bc9d"/>
+    <circle cx="162" cy="160" r="25" fill="#c6d3e4"/>
+    <circle cx="94" cy="160" r="25" fill="#102964"/>
+  </g>
 </svg>

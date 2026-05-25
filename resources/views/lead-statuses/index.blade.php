@@ -90,17 +90,19 @@
                             </td>
                             <td>{{ $status->leads_count }}</td>
                             <td class="text-end">
+                                <div class="icon-action-group">
                                 <form id="{{ $formId }}" method="POST" action="{{ route('admin.lead-statuses.update', $status) }}" class="d-inline">
                                     @csrf
                                     @method('PUT')
                                 </form>
-                                <button class="btn btn-sm btn-outline-primary" type="submit" form="{{ $formId }}">עדכון</button>
+                                <button class="btn btn-sm btn-outline-primary" type="submit" form="{{ $formId }}" title="עדכון סטטוס" aria-label="עדכון סטטוס"><i class="bi bi-floppy icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">עדכון סטטוס</span></button>
 
                                 <form method="POST" action="{{ route('admin.lead-statuses.destroy', $status) }}" class="d-inline" onsubmit="return confirm('למחוק את הסטטוס הזה?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger" type="submit" @disabled($status->is_system || $status->leads_count > 0)>מחיקה</button>
+                                    <button class="btn btn-sm btn-outline-danger" type="submit" @disabled($status->is_system || $status->leads_count > 0) title="מחיקת סטטוס" aria-label="מחיקת סטטוס"><i class="bi bi-trash3 icon-action-icon" aria-hidden="true"></i><span class="visually-hidden">מחיקת סטטוס</span></button>
                                 </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

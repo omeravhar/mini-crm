@@ -1,32 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 210" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 460" role="img" aria-labelledby="title desc">
   <title id="title">EasyCRM logo</title>
-  <desc id="desc">EasyCRM logo with a CRM dashboard icon and wordmark.</desc>
+  <desc id="desc">EasyCRM wordmark with a four-part circular symbol and the slogan Exactly What You Need.</desc>
   <defs>
-    <linearGradient id="shell" x1="36" y1="31" x2="171" y2="174" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1d5fd1"/>
-      <stop offset="0.52" stop-color="#2ca8f5"/>
-      <stop offset="1" stop-color="#1955c8"/>
+    <linearGradient id="arcBlue" x1="92" y1="44" x2="32" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2587ff"/>
+      <stop offset="1" stop-color="#0b63eb"/>
     </linearGradient>
-    <linearGradient id="bars" x1="84" y1="143" x2="143" y2="88" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1d63d3"/>
-      <stop offset="0.5" stop-color="#20c7b4"/>
-      <stop offset="1" stop-color="#8be04c"/>
+    <linearGradient id="arcTeal" x1="166" y1="44" x2="222" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12c6ad"/>
+      <stop offset="1" stop-color="#09b99b"/>
     </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="145%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#0b2a66" flood-opacity=".16"/>
+    <linearGradient id="arcGray" x1="222" y1="152" x2="154" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d7e2ef"/>
+      <stop offset="1" stop-color="#b4c5dd"/>
+    </linearGradient>
+    <linearGradient id="arcNavy" x1="34" y1="150" x2="102" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0c1d57"/>
+      <stop offset="1" stop-color="#122c6a"/>
+    </linearGradient>
+    <linearGradient id="crmBlue" x1="1050" y1="95" x2="1448" y2="95" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1c7dff"/>
+      <stop offset="1" stop-color="#2b8bff"/>
+    </linearGradient>
+    <filter id="softShadow" x="-12%" y="-15%" width="124%" height="130%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#8ea4c5" flood-opacity=".22"/>
     </filter>
   </defs>
-  <g filter="url(#softShadow)">
-    <path d="M36 25h119c13 0 23 10 23 23v76c0 12-7 22-18 27l-56 23a28 28 0 0 1-22 0l-56-23C15 146 8 136 8 124V48c0-13 15-23 28-23Z" fill="url(#shell)"/>
-    <path d="M36 36h119c7 0 13 6 13 13v14H19V49c0-7 10-13 17-13Z" fill="#2a86e8"/>
-    <circle cx="44" cy="49" r="7" fill="#a9e64f"/>
-    <circle cx="65" cy="49" r="7" fill="#b9ee4e"/>
-    <circle cx="86" cy="49" r="7" fill="#72b8ef"/>
-    <path d="M19 68h149v56c0 8-5 14-12 17l-56 23a16 16 0 0 1-13 0l-56-23c-7-3-12-9-12-17V68Z" fill="#fff"/>
-    <circle cx="83" cy="91" r="20" fill="#1c67cf"/>
-    <path d="M42 142c5-28 21-42 46-42 15 0 27 6 35 18l-16 9c-5-6-11-9-19-9-14 0-23 7-28 24H42Z" fill="#1c67cf"/>
-    <path d="M80 136h15v28l-15 6v-34Zm25-20h15v38l-15 6v-44Zm25-21h15v50l-15 6V95Z" fill="url(#bars)"/>
-    <path d="M146 75l5 9 10 1-8 7 3 10-10-5-9 5 2-10-8-7 11-1 4-9Z" fill="#ffc443"/>
+
+  <rect width="1560" height="460" fill="#ffffff"/>
+
+  <g transform="translate(26 28) scale(1.34)" filter="url(#softShadow)">
+    <path d="M112 36 A92 92 0 0 0 36 112" fill="none" stroke="url(#arcBlue)" stroke-width="30" stroke-linecap="round"/>
+    <path d="M144 36 A92 92 0 0 1 220 112" fill="none" stroke="url(#arcTeal)" stroke-width="30" stroke-linecap="round"/>
+    <path d="M220 144 A92 92 0 0 1 144 220" fill="none" stroke="url(#arcGray)" stroke-width="30" stroke-linecap="round"/>
+    <path d="M36 144 A92 92 0 0 0 112 220" fill="none" stroke="url(#arcNavy)" stroke-width="30" stroke-linecap="round"/>
+
+    <circle cx="94" cy="96" r="25" fill="#156ff5"/>
+    <circle cx="162" cy="96" r="25" fill="#08bc9d"/>
+    <circle cx="162" cy="160" r="25" fill="#c6d3e4"/>
+    <circle cx="94" cy="160" r="25" fill="#102964"/>
   </g>
-  <text x="225" y="130" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="82" font-weight="800" letter-spacing="-1" fill="#071f5c">EasyCRM</text>
+
+  <g font-family="Segoe UI, Arial, sans-serif" text-rendering="geometricPrecision">
+    <text x="456" y="233" font-size="220" font-weight="700" letter-spacing="-5" fill="#102964">Easy</text>
+    <text x="958" y="233" font-size="220" font-weight="700" letter-spacing="-5" fill="url(#crmBlue)">CRM</text>
+    <text x="456" y="352" font-size="88" font-weight="500" fill="#7c8796">Exactly What You Need</text>
+  </g>
 </svg>

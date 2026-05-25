@@ -1082,6 +1082,156 @@ class IntegrationManagementTest extends TestCase
         $this->assertSame($owner->id, $lead->owner_id);
     }
 
+    public function test_processing_google_webhook_event_uses_campaign_name_from_payload(): void
+    {
+        $integration = Integration::create([
+            'name' => 'Google Source',
+            'platform' => 'google',
+            'status' => 'active',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integration->id,
+            'external_form_id' => '1234',
+            'external_form_name' => null,
+            'is_active' => true,
+        ]);
+
+        Http::fake();
+
+        $event = WebhookEvent::create([
+            'integration_id' => $integration->id,
+            'platform' => 'google',
+            'event_type' => 'google_lead',
+            'external_event_id' => 'google-lead-cache-123',
+            'external_form_id' => '1234',
+            'status' => 'received',
+            'payload' => [
+                'lead_id' => 'google-lead-cache-123',
+                'form_id' => 1234,
+                'campaign_id' => 999,
+                'campaign_name' => 'Known Campaign',
+                'user_column_data' => [
+                    [
+                        'column_id' => 'FULL_NAME',
+                        'string_value' => 'Fresh Lead',
+                    ],
+                    [
+                        'column_id' => 'EMAIL',
+                        'string_value' => 'fresh@example.com',
+                    ],
+                ],
+            ],
+            'received_at' => now(),
+        ]);
+
+        (new ProcessWebhookEvent($event->id))->handle();
+
+        $lead = Lead::where('external_lead_id', 'google-lead-cache-123')->firstOrFail();
+
+        $this->assertSame('Known Campaign', $lead->external_campaign_name);
+        $this->assertSame('999', $lead->external_campaign_id);
+    }
+
+    public function test_processing_google_webhook_event_does_not_treat_campaign_id_as_campaign_name(): void
+    {
+        $integration = Integration::create([
+            'name' => 'Google Source',
+            'platform' => 'google',
+            'status' => 'active',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integration->id,
+            'external_form_id' => '1234',
+            'external_form_name' => 'Google Kitchen Campaign',
+            'is_active' => true,
+            'field_map' => [
+                'campaign' => 'campaign_id',
+            ],
+        ]);
+
+        $event = WebhookEvent::create([
+            'integration_id' => $integration->id,
+            'platform' => 'google',
+            'event_type' => 'google_lead',
+            'external_event_id' => 'google-lead-id-name-123',
+            'external_form_id' => '1234',
+            'status' => 'received',
+            'payload' => [
+                'lead_id' => 'google-lead-id-name-123',
+                'form_id' => 1234,
+                'campaign_id' => 777,
+                'user_column_data' => [
+                    [
+                        'column_id' => 'FULL_NAME',
+                        'string_value' => 'Form Name Lead',
+                    ],
+                    [
+                        'column_id' => 'EMAIL',
+                        'string_value' => 'form-name@example.com',
+                    ],
+                ],
+            ],
+            'received_at' => now(),
+        ]);
+
+        (new ProcessWebhookEvent($event->id))->handle();
+
+        $lead = Lead::where('external_lead_id', 'google-lead-id-name-123')->firstOrFail();
+
+        $this->assertSame('Google Kitchen Campaign', $lead->external_campaign_name);
+        $this->assertSame('777', $lead->external_campaign_id);
+    }
+
+    public function test_processing_google_webhook_event_falls_back_to_friendly_form_name_for_campaign(): void
+    {
+        $integration = Integration::create([
+            'name' => 'Google Source',
+            'platform' => 'google',
+            'status' => 'active',
+        ]);
+
+        IntegrationFormMapping::create([
+            'integration_id' => $integration->id,
+            'external_form_id' => '1234',
+            'external_form_name' => 'Google Kitchen Campaign',
+            'is_active' => true,
+        ]);
+
+        $event = WebhookEvent::create([
+            'integration_id' => $integration->id,
+            'platform' => 'google',
+            'event_type' => 'google_lead',
+            'external_event_id' => 'google-lead-formname-123',
+            'external_form_id' => '1234',
+            'status' => 'received',
+            'payload' => [
+                'lead_id' => 'google-lead-formname-123',
+                'form_id' => 1234,
+                'campaign_id' => 777,
+                'user_column_data' => [
+                    [
+                        'column_id' => 'FULL_NAME',
+                        'string_value' => 'Form Name Lead',
+                    ],
+                    [
+                        'column_id' => 'EMAIL',
+                        'string_value' => 'form-name@example.com',
+                    ],
+                ],
+            ],
+            'received_at' => now(),
+        ]);
+
+        (new ProcessWebhookEvent($event->id))->handle();
+
+        $lead = Lead::where('external_lead_id', 'google-lead-formname-123')->firstOrFail();
+
+        $this->assertSame('Google Kitchen Campaign', $lead->external_campaign_name);
+        $this->assertSame('777', $lead->external_campaign_id);
+    }
+
     public function test_admin_can_view_integrations_dashboard(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -1106,7 +1256,10 @@ class IntegrationManagementTest extends TestCase
             ->assertOk()
             ->assertSee('אינטגרציות ולוגי Webhook')
             ->assertSee('TikTok Leads')
-            ->assertSee('Signature mismatch');
+            ->assertSee('Signature mismatch')
+            ->assertSee('data-page-scroll-button="top"', false)
+            ->assertSee('data-page-scroll-button="bottom"', false)
+            ->assertSee('integration-mappings-disclosure', false);
     }
 
     public function test_dashboard_shows_payload_preview_for_pending_fetch_webhooks(): void

@@ -10,6 +10,16 @@ use Throwable;
 
 class LeadStatus extends Model
 {
+    private const SELECT_THEME_BY_BADGE_CLASS = [
+        'text-bg-secondary' => 'lead-status-select--secondary',
+        'text-bg-primary' => 'lead-status-select--primary',
+        'text-bg-info' => 'lead-status-select--info',
+        'text-bg-warning' => 'lead-status-select--warning',
+        'text-bg-success' => 'lead-status-select--success',
+        'text-bg-danger' => 'lead-status-select--danger',
+        'text-bg-dark' => 'lead-status-select--dark',
+    ];
+
     public const DEFAULT_STATUSES = [
         [
             'slug' => 'new',
@@ -53,7 +63,7 @@ class LeadStatus extends Model
         ],
         [
             'slug' => 'lost',
-            'name' => 'אבוד',
+            'name' => 'לא רלוונטי',
             'badge_class' => 'text-bg-danger',
             'sort_order' => 60,
             'is_system' => true,
@@ -107,6 +117,20 @@ class LeadStatus extends Model
             ->pluck('badge_class', 'slug')
             ->filter()
             ->all();
+    }
+
+    public static function selectThemeClasses(): array
+    {
+        return self::statusRows()
+            ->mapWithKeys(fn ($status) => [
+                $status->slug => self::selectThemeClass($status->badge_class ?? null),
+            ])
+            ->all();
+    }
+
+    public static function selectThemeClass(?string $badgeClass): string
+    {
+        return self::SELECT_THEME_BY_BADGE_CLASS[$badgeClass ?? ''] ?? 'lead-status-select--default';
     }
 
     public static function closedValues(): array

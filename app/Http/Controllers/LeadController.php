@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class LeadController extends Controller
 {
@@ -59,6 +60,17 @@ class LeadController extends Controller
         'private',
     ];
 
+    private const ARCHIVE_REASON_REQUIRED_STATUSES = [
+        'lost',
+    ];
+
+    private const OPEN_STATUS_FILTER = '__open__';
+
+    private const SUMMARY_SCOPES = [
+        'unassigned',
+        'converted',
+    ];
+
     private const ENTRY_TIMEZONE = 'Asia/Jerusalem';
 
     public function create()
@@ -84,7 +96,7 @@ class LeadController extends Controller
     public function store(Request $request)
     {
         $admin = $this->requireAdmin();
-        $data = $this->validatedLeadData($request);
+        $data = $this->validatedLeadData($request, null, $admin);
         $data['created_by'] = $admin->id;
 
         $lead = Lead::create($data);
@@ -128,6 +140,11 @@ class LeadController extends Controller
         return view('leads.my', $data);
     }
 
+    public function archive(Request $request)
+    {
+        return view('leads.archive', $this->archivedLeadsData($request, $this->user()));
+    }
+
     public function edit(Lead $lead)
     {
         $this->authorizeLead($lead);
@@ -144,7 +161,7 @@ class LeadController extends Controller
     public function update(Request $request, Lead $lead)
     {
         $user = $this->authorizeLead($lead);
-        $data = $this->validatedLeadData($request, $lead);
+        $data = $this->validatedLeadData($request, $lead, $user);
         $previousOwnerId = $lead->owner_id;
         $previousScheduleSignature = $this->followUpSignature($lead);
 
@@ -280,12 +297,19 @@ class LeadController extends Controller
         $data = $request->validate([
             'status' => ['sometimes', 'required', Rule::in($this->statusValues())],
             'priority' => ['sometimes', 'required', Rule::in(self::PRIORITIES)],
+            'archive_reason' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        if (! array_key_exists('status', $data)) {
+            unset($data['archive_reason']);
+        }
 
         abort_if(empty($data), 422, 'No lead fields were provided for update.');
 
         if (array_key_exists('status', $data)) {
+            $this->ensureArchiveReasonIsPresent($data['status'], $data['archive_reason'] ?? null);
             $this->syncClosedAtPayload($data, $lead);
+            $this->syncArchivePayload($data, $lead, $this->user());
         }
 
         $lead->update($data);
@@ -302,6 +326,7 @@ class LeadController extends Controller
                 'status' => $lead->status,
                 'priority' => $lead->priority,
                 'closed_at' => optional($lead->closed_at)->format('Y-m-d H:i'),
+                'archived_at' => optional($lead->archived_at)->format('Y-m-d H:i'),
             ]);
         }
 
@@ -359,7 +384,7 @@ class LeadController extends Controller
         return $user;
     }
 
-    private function validatedLeadData(Request $request, ?Lead $lead = null): array
+    private function validatedLeadData(Request $request, ?Lead $lead = null, ?User $actor = null): array
     {
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
@@ -376,6 +401,7 @@ class LeadController extends Controller
             'interested_in' => ['nullable', 'string', 'max:255'],
             'lead_type' => ['nullable', Rule::in(self::LEAD_TYPES)],
             'external_campaign_name' => ['nullable', 'string', 'max:255'],
+            'archive_reason' => ['nullable', 'string', 'max:1000'],
             'follow_up' => ['nullable', 'date', 'required_with:follow_up_time'],
             'follow_up_time' => ['nullable', 'date_format:H:i', 'required_with:follow_up'],
             'tags_text' => ['nullable', 'string', 'max:500'],
@@ -392,6 +418,8 @@ class LeadController extends Controller
             'visibility' => ['required', Rule::in(self::VISIBILITY)],
         ]);
 
+        $this->ensureArchiveReasonIsPresent($data['status'], $data['archive_reason'] ?? null);
+
         $data['tags'] = collect(explode(',', (string) ($data['tags_text'] ?? '')))
             ->map(fn (string $tag) => trim($tag))
             ->filter()
@@ -400,6 +428,7 @@ class LeadController extends Controller
         unset($data['tags_text']);
 
         $this->syncClosedAtPayload($data, $lead);
+        $this->syncArchivePayload($data, $lead, $actor);
 
         $data['lead_type'] = $data['lead_type'] ?? $lead?->lead_type ?? 'new';
 
@@ -439,12 +468,21 @@ class LeadController extends Controller
     private function adminIndexData(Request $request): array
     {
         $filters = $this->leadFilters($request, true);
-        $query = Lead::with(['owner', 'customer']);
+        $query = Lead::with(['owner', 'customer'])
+            ->whereNull('archived_at');
+        $summaryFilters = array_merge($filters, ['summary_scope' => '']);
+        $summaryQuery = Lead::query()->whereNull('archived_at');
 
         $this->applyLeadFilters($query, $filters, true);
+        $this->applyLeadFilters($summaryQuery, $summaryFilters, true);
 
         return [
             'leads' => $query->latest()->get(),
+            'leadSummary' => [
+                'total' => (clone $summaryQuery)->count(),
+                'unassigned' => (clone $summaryQuery)->whereNull('owner_id')->count(),
+                'converted' => (clone $summaryQuery)->whereHas('customer')->count(),
+            ],
             'users' => User::orderBy('name')->get(),
             'options' => $this->options(),
             'statusLabels' => $this->statusLabels(),
@@ -457,7 +495,8 @@ class LeadController extends Controller
     {
         $filters = $this->leadFilters($request, false);
         $query = Lead::with(['owner', 'customer'])
-            ->where('owner_id', $userId);
+            ->where('owner_id', $userId)
+            ->whereNull('archived_at');
 
         $this->applyLeadFilters($query, $filters, false);
 
@@ -470,7 +509,37 @@ class LeadController extends Controller
         ];
     }
 
-    private function campaignOptions(?int $ownerId = null, bool $restrictToOwner = false): array
+    private function archivedLeadsData(Request $request, ?User $user = null): array
+    {
+        $isAdmin = $user?->isAdmin() ?? false;
+        $filters = $this->leadFilters($request, true);
+        $query = Lead::with(['owner', 'customer', 'creator', 'archiver'])
+            ->whereNotNull('archived_at');
+        $summaryFilters = array_merge($filters, ['status' => '']);
+        $summaryQuery = Lead::query()->whereNotNull('archived_at');
+
+        $this->applyLeadFilters($query, $filters, true);
+        $this->applyLeadFilters($summaryQuery, $summaryFilters, true);
+
+        return [
+            'leads' => $query->orderByDesc('archived_at')->orderByDesc('id')->get(),
+            'archiveSummary' => [
+                'total' => (clone $summaryQuery)->count(),
+                'won' => (clone $summaryQuery)->where('status', 'won')->count(),
+                'lost' => (clone $summaryQuery)->where('status', 'lost')->count(),
+            ],
+            'users' => User::orderBy('name')->get(),
+            'options' => $this->options(),
+            'statusLabels' => $this->statusLabels(),
+            'filters' => $filters,
+            'campaignOptions' => $this->campaignOptions(null, false, true),
+            'archiveRoute' => route('leads.archive'),
+            'activeLeadsRoute' => route($isAdmin ? 'admin.leads.index' : 'leads.my'),
+            'isAdminArchive' => $isAdmin,
+        ];
+    }
+
+    private function campaignOptions(?int $ownerId = null, bool $restrictToOwner = false, bool $archivedOnly = false, ?User $accessibleTo = null): array
     {
         if ($restrictToOwner && ! $ownerId) {
             return [];
@@ -478,6 +547,15 @@ class LeadController extends Controller
 
         $leads = Lead::query()
             ->when($restrictToOwner, fn (Builder $query) => $query->where('owner_id', $ownerId))
+            ->when($accessibleTo && ! $accessibleTo->isAdmin(), function (Builder $query) use ($accessibleTo) {
+                $query->where(function (Builder $builder) use ($accessibleTo) {
+                    $builder
+                        ->where('owner_id', $accessibleTo->id)
+                        ->orWhere('created_by', $accessibleTo->id);
+                });
+            })
+            ->when($archivedOnly, fn (Builder $query) => $query->whereNotNull('archived_at'))
+            ->when(! $archivedOnly, fn (Builder $query) => $query->whereNull('archived_at'))
             ->where(function (Builder $query) {
                 $query
                     ->whereNotNull('external_campaign_name')
@@ -583,6 +661,7 @@ class LeadController extends Controller
             'entry_from' => $this->dateFilterValue($request->input('entry_from')),
             'entry_to' => $this->dateFilterValue($request->input('entry_to')),
             'follow_up_scope' => (string) $request->input('follow_up_scope', ''),
+            'summary_scope' => $allowOwnerFilter ? (string) $request->input('summary_scope', '') : '',
         ];
     }
 
@@ -621,7 +700,9 @@ class LeadController extends Controller
             }
         }
 
-        if (in_array($filters['status'], $this->statusValues(), true)) {
+        if ($filters['status'] === self::OPEN_STATUS_FILTER) {
+            $query->whereNotIn('status', $this->closedStatuses());
+        } elseif (in_array($filters['status'], $this->statusValues(), true)) {
             $query->where('status', $filters['status']);
         }
 
@@ -662,6 +743,14 @@ class LeadController extends Controller
             'none' => $query->whereNull('follow_up'),
             default => null,
         };
+
+        if ($allowOwnerFilter && in_array($filters['summary_scope'] ?? '', self::SUMMARY_SCOPES, true)) {
+            match ($filters['summary_scope']) {
+                'unassigned' => $query->whereNull('owner_id'),
+                'converted' => $query->whereHas('customer'),
+                default => null,
+            };
+        }
     }
 
     private function dateFilterValue(mixed $value): string
@@ -727,6 +816,53 @@ class LeadController extends Controller
         }
 
         $data['closed_at'] = now();
+    }
+
+    private function syncArchivePayload(array &$data, ?Lead $lead = null, ?User $actor = null): void
+    {
+        $status = (string) ($data['status'] ?? $lead?->status ?? '');
+
+        if ($status === '') {
+            return;
+        }
+
+        if (! in_array($status, $this->closedStatuses(), true)) {
+            $data['archived_at'] = null;
+            $data['archived_by'] = null;
+            $data['archive_reason'] = null;
+
+            return;
+        }
+
+        $data['archived_at'] = $lead?->archived_at
+            ?? $lead?->closed_at
+            ?? $data['closed_at']
+            ?? now();
+
+        $data['archived_by'] = $lead?->archived_by ?? $actor?->id;
+        $data['archive_reason'] = $this->requiresArchiveReason($status)
+            ? trim((string) ($data['archive_reason'] ?? $lead?->archive_reason ?? ''))
+            : null;
+    }
+
+    private function ensureArchiveReasonIsPresent(?string $status, mixed $reason): void
+    {
+        if (! $this->requiresArchiveReason((string) $status)) {
+            return;
+        }
+
+        if (trim((string) $reason) !== '') {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'archive_reason' => 'יש למלא סיבה לפני העברת הליד לארכיון.',
+        ]);
+    }
+
+    private function requiresArchiveReason(string $status): bool
+    {
+        return in_array($status, self::ARCHIVE_REASON_REQUIRED_STATUSES, true);
     }
 
     private function statusValues(): array

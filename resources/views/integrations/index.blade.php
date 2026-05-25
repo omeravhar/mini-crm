@@ -29,7 +29,7 @@
         'notes' => 'הערות פנימיות לצוות: מי יצר את החיבור, מאיפה הגיע ה-token, ומה עוד צריך לזכור.',
         'edit_sensitive' => 'במסך עריכה אפשר להשאיר שדות סודיים ריקים כדי לשמור את הערך שכבר קיים במערכת.',
         'external_form_id' => 'מזהה הטופס בפלטפורמה. ב-Meta רואים אותו בתוך Instant Forms או באירוע שמגיע מה-webhook. ב-Google Ads Lead Forms זהו form_id.',
-        'external_form_name' => 'שם ידידותי לטופס בתוך המערכת. אפשר לרשום ידנית כדי לזהות מהר לאיזה קמפיין הוא שייך.',
+        'external_form_name' => 'שם ידידותי לטופס בתוך המערכת. אפשר לרשום ידנית כדי לזהות מהר לאיזה קמפיין הוא שייך. ב-Google זה גם משמש fallback ידידותי ברשומות הליד כשב-webhook מגיע רק campaign_id בלי campaign_name.',
         'default_owner_id' => 'מי יקבל בעלות על לידים שמגיעים מהטופס הזה אם לא מגיע owner אחר מתוך המידע החיצוני.',
         'field_map_json' => 'מיפוי בין שמות השדות ב-CRM לבין הנתיב שממנו להביא את הערך ב-payload. צד שמאל = שדה אצלכם, צד ימין = נתיב במידע החיצוני. ב-Google אפשר למפות גם שדות מתוך google_fields.COLUMN_ID.',
         'mapping_notes' => 'הערות פנימיות על הטופס או על המיפוי.',
@@ -45,6 +45,7 @@
 @section('pageSubtitle', 'ניהול חיבורים, מיפוי טפסים, כתובות callback ולוגי שגיאות')
 
 @section('content')
+    <div id="integrationsPageTop"></div>
     <style>
         .integration-required-markers div:has(> label.form-label + input[required]) > label.form-label::after,
         .integration-required-markers div:has(> label.form-label + select[required]) > label.form-label::after,
@@ -52,6 +53,71 @@
             content: " *";
             color: var(--bs-danger);
             font-weight: 700;
+        }
+
+        .integration-mappings-disclosure {
+            border-top: 1px solid var(--bs-border-color);
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+        }
+
+        .integration-mappings-summary {
+            align-items: center;
+            cursor: pointer;
+            display: flex;
+            flex-wrap: wrap;
+            gap: .75rem;
+            justify-content: space-between;
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+
+        .integration-mappings-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .integration-mappings-summary::marker {
+            display: none;
+        }
+
+        .integration-mappings-summary-badge {
+            background: var(--bs-light);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 999px;
+            color: var(--bs-secondary-color);
+            font-size: .875rem;
+            line-height: 1;
+            padding: .55rem .9rem;
+            white-space: nowrap;
+        }
+
+        .integration-page-scroll-nav {
+            bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            left: 1.25rem;
+            position: fixed;
+            z-index: 1020;
+        }
+
+        .integration-page-scroll-nav .btn {
+            backdrop-filter: blur(10px);
+            box-shadow: 0 .5rem 1rem rgba(15, 23, 42, .12);
+            min-width: 8.5rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .integration-page-scroll-nav {
+                bottom: 1rem;
+                left: 1rem;
+                right: 1rem;
+            }
+
+            .integration-page-scroll-nav .btn {
+                min-width: 0;
+                width: 100%;
+            }
         }
     </style>
 
@@ -187,6 +253,9 @@
                 $verifyUrl = $integration->platform === 'meta'
                     ? route('webhooks.meta.shared.verify')
                     : null;
+                $mappingCount = $integration->formMappings->count();
+                $activeMappingCount = $integration->formMappings->where('is_active', true)->count();
+                $showMappingsByDefault = (string) old('integration_context') === (string) $integration->id;
             @endphp
 
             <div class="col-12">
@@ -339,9 +408,18 @@
                                 </div>
                             </div>
 
-                        <hr class="my-4">
+                        <details class="integration-mappings-disclosure" @if ($showMappingsByDefault) open @endif>
+                            <summary class="integration-mappings-summary">
+                                <div>
+                                    <div class="h6 mb-1">טפסים מחוברים ומיפויים</div>
+                                    <div class="small text-muted">
+                                        {{ $mappingCount }} טפסים בסך הכל, {{ $activeMappingCount }} פעילים
+                                    </div>
+                                </div>
+                                <span class="integration-mappings-summary-badge">פתח / סגור</span>
+                            </summary>
 
-                        <div class="row g-4">
+                            <div class="row g-4">
                             <div class="col-xl-5">
                                 <h2 class="h6 mb-3">מיפוי טפסים</h2>
                                 <div class="table-responsive">
@@ -487,7 +565,8 @@
                                     </div>
                                 </form>
                             </div>
-                        </div>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -571,6 +650,11 @@
             </div>
         </div>
     </div>
+    <div class="integration-page-scroll-nav" aria-label="Page navigation">
+        <button class="btn btn-sm btn-primary" type="button" data-page-scroll-button="top">לתחילת העמוד</button>
+        <button class="btn btn-sm btn-outline-primary bg-white" type="button" data-page-scroll-button="bottom">לסוף העמוד</button>
+    </div>
+    <div id="integrationsPageBottom"></div>
 @endsection
 
 @push('scripts')
@@ -589,6 +673,10 @@
                 info: 'מידע',
             };
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const scrollTargets = {
+                top: document.getElementById('integrationsPageTop'),
+                bottom: document.getElementById('integrationsPageBottom'),
+            };
 
             const escapeHtml = (value) => {
                 const element = document.createElement('div');
@@ -659,6 +747,21 @@
                     </div>
                 `;
             };
+
+            document.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-page-scroll-button]');
+                const targetKey = button?.dataset.pageScrollButton;
+                const target = targetKey ? scrollTargets[targetKey] : null;
+
+                if (!button || !target) {
+                    return;
+                }
+
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: targetKey === 'bottom' ? 'end' : 'start',
+                });
+            });
 
             document.addEventListener('click', async (event) => {
                 const button = event.target.closest('[data-integration-test-button]');
