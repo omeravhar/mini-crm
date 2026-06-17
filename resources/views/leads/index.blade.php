@@ -579,6 +579,166 @@
             }
         }
 
+        @media (min-width: 992px) and (max-width: 1399.98px) {
+            .all-leads-page-header {
+                position: static;
+            }
+
+            .all-leads-page-header .page-header-bar {
+                gap: 0.65rem 0.9rem;
+                margin-bottom: 0.55rem;
+                padding-right: 0;
+            }
+
+            .all-leads-page-header .page-header-bar .text-muted {
+                display: none;
+            }
+
+            .all-leads-page-header .page-header-bar .h3 {
+                font-size: 1.9rem;
+            }
+
+            .all-leads-page-header .page-actions {
+                gap: 0.45rem !important;
+            }
+
+            .all-leads-page-header .page-actions .btn {
+                min-height: 2.2rem;
+                padding: 0.32rem 0.8rem;
+                font-size: 0.82rem;
+            }
+
+            .all-leads-page-header .admin-leads-filter {
+                position: sticky;
+                top: 0;
+                z-index: 6;
+                margin-bottom: 0.55rem !important;
+                box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+            }
+
+            .all-leads-page-header .admin-leads-filter.children-filters-card {
+                --filters-card-padding: 12px;
+                --filters-gap: 8px;
+                --filters-control-height: 36px;
+                --filters-control-radius: 10px;
+                padding: 12px;
+                border-radius: 16px;
+            }
+
+            .all-leads-page-header .admin-leads-filter__grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+
+            .all-leads-page-header .admin-leads-filter .filter-col {
+                gap: 3px;
+            }
+
+            .all-leads-page-header .admin-leads-filter.children-filters-card .form-label {
+                font-size: 11px;
+            }
+
+            .all-leads-page-header .admin-leads-filter.children-filters-card .form-control,
+            .all-leads-page-header .admin-leads-filter.children-filters-card .form-select {
+                min-height: 36px;
+                padding: 0 10px;
+                font-size: 12px;
+            }
+
+            .all-leads-page-header .admin-leads-filter.children-filters-card .btn {
+                min-height: 36px;
+                padding: 0 12px;
+                font-size: 12px;
+            }
+
+            .all-leads-page-header .children-filters-footer {
+                grid-template-columns: auto minmax(150px, 1fr) auto;
+                gap: 8px 10px;
+                padding-top: 8px;
+            }
+
+            .all-leads-page-header .filters-footer-right,
+            .all-leads-page-header .filters-footer-left {
+                gap: 8px;
+            }
+
+            .all-leads-page-header .active-filters-box {
+                min-height: 42px;
+                min-width: 140px;
+                width: min(100%, 190px);
+                padding: 8px 10px;
+                gap: 6px;
+                border-radius: 10px;
+            }
+
+            .all-leads-page-header .active-filters-box strong {
+                font-size: 11px;
+            }
+
+            .all-leads-page-header .active-filters-count {
+                font-size: 16px;
+            }
+
+            .all-leads-page-header .active-filters-icon {
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar {
+                position: sticky;
+                top: var(--admin-leads-filter-height, 0px);
+                z-index: 5;
+                border-radius: 12px;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar .card-body {
+                padding: 0.35rem 0.55rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__grid {
+                grid-template-columns: auto minmax(8.5rem, 10rem) auto;
+                gap: 0.25rem 0.5rem;
+                align-items: center;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__summary .fw-semibold {
+                font-size: 0.78rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__summary .small {
+                font-size: 0.7rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__owner .form-label {
+                font-size: 0.68rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__owner .form-select {
+                min-height: 1.75rem;
+                padding-block: 0.08rem;
+                font-size: 0.75rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__actions {
+                gap: 0.25rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__actions .btn {
+                min-height: 1.75rem;
+                padding: 0.18rem 0.5rem;
+                font-size: 0.74rem;
+            }
+
+            .all-leads-page-header .admin-leads-bulk-bar__feedback {
+                margin-top: 0.15rem !important;
+                font-size: 0.68rem;
+                line-height: 1.15;
+            }
+        }
+
         @media (max-width: 991.98px) {
             .all-leads-page-header .admin-leads-filter__grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -655,11 +815,26 @@
 
             const updateStickyOffsets = () => {
                 const isDesktop = window.matchMedia('(min-width: 992px)').matches;
-                const pageHeaderHeight = isDesktop && pageHeader
-                    ? Math.ceil(pageHeader.getBoundingClientRect().height)
-                    : 0;
+                const isLaptop = window.matchMedia('(min-width: 992px) and (max-width: 1399.98px)').matches;
+                let filterHeight = 0;
+                let stickyOffset = 0;
 
-                document.documentElement.style.setProperty('--admin-leads-filter-offset', `${pageHeaderHeight}px`);
+                if (isLaptop && filterForm) {
+                    const filterStyles = window.getComputedStyle(filterForm);
+                    const filterMarginBottom = Number.parseFloat(filterStyles.marginBottom) || 0;
+                    filterHeight = Math.ceil(filterForm.getBoundingClientRect().height + filterMarginBottom);
+
+                    const bulkHeight = bulkForm
+                        ? Math.ceil(bulkForm.getBoundingClientRect().height)
+                        : 0;
+
+                    stickyOffset = filterHeight + bulkHeight;
+                } else if (isDesktop && pageHeader) {
+                    stickyOffset = Math.ceil(pageHeader.getBoundingClientRect().height);
+                }
+
+                document.documentElement.style.setProperty('--admin-leads-filter-height', `${filterHeight}px`);
+                document.documentElement.style.setProperty('--admin-leads-filter-offset', `${stickyOffset}px`);
             };
 
             const updateActiveFiltersCount = () => {
